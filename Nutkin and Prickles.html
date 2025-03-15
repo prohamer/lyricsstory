@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+		<html>
+		<head>
+
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lyrics Player</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 10px;
+            background: #000;  /* 原本是 #f9f9f9 */
+			color: #fff;      /* 加入這行確保文字顏色 */
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            gap: 20px;
+        }
+        .video-container {
+            flex: 2;
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            background: #000;
+        }
+		/* 手機版樣式 */
+        @media (max-width: 768px) {
+          .video-container {
+                position: sticky;
+                top: 60px;  /* 加大這個值，配合 Google Sites 的標題列高度 */
+                z-index: 100;
+                margin-bottom: 10px;
+                /* 可能需要額外的 margin-top */
+                margin-top: 60px;  /* 加入這行，確保初始位置也正確 */
+            }
+
+            body {
+               /* 確保有足夠的頂部空間 */
+                 padding-top: 60px;
+            }
+			
+            .container {
+                flex-direction: column;
+                padding-top: 0;
+            }
+        }
+		
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .lyrics-container {
+            flex: 1;
+            height: calc(100vh - 40px);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background: #1a1a1a;  /* 原本是 white */
+			color: #fff;         /* 加入這行 */
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .lyrics-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 15px;
+            background: #2d2d2d;  /* 原本是 #f0f0f0 */
+			border-bottom: 1px solid #333;  /* 原本是 #ddd */
+            border-bottom: 1px solid #ddd;
+        }
+        .title {
+            font-weight: bold;
+        }
+        .mode-switch {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        .mode-label {
+            font-size: 0.9em;
+            color: #ccc;  /* 原本是 #666 */
+        }
+        #lyricsDisplay {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+        .lyrics-line {
+            padding: 10px;
+            margin: 5px 0;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+            line-height: 1.4;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+			color: #ccc;  /* 加入這行 */
+        }
+        .lyrics-line:hover {
+            background-color: #333;  /* 原本是 #f0f0f0 */
+        }
+        .lyrics-line.active {
+            background-color: #2196F3;  /* 可以保留藍色或改成 #1a1a1a */
+			color: #fff;  /* 加入這行 */
+            font-weight: bold;
+        }
+        .loop-btn {
+            padding: 5px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            opacity: 0.5;
+            transition: all 0.2s;
+            color: #c79ac5;  /* 原本是 #666 */
+        }
+        .loop-btn:hover {
+            opacity: 1;
+        }
+        .loop-btn.active {
+            color: #ec21f3;
+            opacity: 1;
+        }
+        .lyrics-text {
+            flex: 1;
+        }
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            .lyrics-container {
+                height: 50vh;
+            }
+        }
+        /* 說明按鈕樣式 */
+        .help-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+		.help-button:hover {
+            background: #1976D2;
+            transform: translateY(-2px);
+        }
+        /* 說明面板樣式 */
+        .help-panel {
+            position: fixed;
+            bottom: -100%;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 20px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            transition: bottom 0.3s ease;
+            z-index: 999;
+            max-height: 80vh;
+            overflow-y: auto;
+			color: #000;
+        }
+        .help-panel.show {
+            bottom: 0;
+        }
+        .help-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .help-section {
+            margin-bottom: 20px;
+        }
+        .help-section h3 {
+            color: #2196F3;
+            margin-bottom: 10px;
+        }
+        .help-list {
+            list-style: none;
+            padding: 0;
+        }
+        .help-list li {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .help-icon {
+            color: #666;
+            width: 24px;
+            text-align: center;
+        }
+        .close-help {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+        .backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 998;
+        }
+        .backdrop.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        @media (max-width: 768px) {
+            .help-panel {
+                max-height: 70vh;
+            }
+        }
+    </style>
+
+
+    <div class="container">
+        <div class="video-container">
+            <div id="player"></div>
+        </div>
+        <div class="lyrics-container">
+            <div class="lyrics-header">
+                <div class="title">字幕同步播放器</div>
+                <div class="mode-switch">
+                    <span class="mode-label">自動播放模式</span>
+                    <label class="switch">
+                        <input type="checkbox" id="modeToggle" checked="">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            <div id="lyricsDisplay"></div>
+        </div>
+    </div>
+    <!-- 說明按鈕 -->
+    <button class="help-button" onclick="toggleHelp()">
+        <i class="fas fa-question-circle"></i>
+        使用說明
+    </button>
+    <!-- 背景遮罩 -->
+    <div class="backdrop" onclick="toggleHelp()"></div>
+    <!-- 說明面板 -->
+    <div class="help-panel">
+        <button class="close-help" onclick="toggleHelp()">×</button>
+        <div class="help-content">
+		<div class="help-section">
+                <h3>播放模式</h3>
+                <ul class="help-list">
+                    <li>
+                        <i class="fas fa-play-circle help-icon"></i>
+                        <span>自動播放模式：影片會連續播放，歌詞自動跟隨（預設模式）</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-chalkboard-teacher help-icon"></i>
+                        <span>關閉自動播放模式：進入單句教學模式，點擊歌詞只播放單句，播完自動暫停</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-toggle-on help-icon"></i>
+                        <span>使用右上角的開關切換模式</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="help-section">
+                <h3>歌詞控制</h3>
+                <ul class="help-list">
+                    <li>
+                        <i class="fas fa-mouse-pointer help-icon"></i>
+                        <span>點擊任何歌詞行可跳轉到該位置</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-sync-alt help-icon"></i>
+                        <span>點擊歌詞前的循環按鈕可重複播放該句</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-sync-alt help-icon" style="color: #2196F3;"></i>
+                        <span>藍色圖標表示該句正在循環播放中</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="help-section">
+                <h3>教學模式使用技巧</h3>
+                <ul class="help-list">
+                    <li>
+                        <i class="fas fa-graduation-cap help-icon"></i>
+                        <span>適合逐句講解與練習</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-redo help-icon"></i>
+                        <span>可配合循環按鈕反覆練習困難句子</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-hand-point-up help-icon"></i>
+                        <span>點擊下一句繼續播放</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="help-section">
+                <h3>自動播放模式使用技巧</h3>
+                <ul class="help-list">
+                    <li>
+                        <i class="fas fa-music help-icon"></i>
+                        <span>適合完整聆聽歌曲</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-scroll help-icon"></i>
+                        <span>歌詞會自動捲動並高亮</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-random help-icon"></i>
+                        <span>可隨時點擊歌詞跳轉</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <script>
+        let player;
+        let currentInterval;
+        let loopingIndex = -1;
+        let isLooping = false;
+        let isContinuousMode = true;
+
+        // 歌詞數據
+        let lyrics = [
+        { time: 0.9, text: `This lesson is specially created to boost all your English skills.` },
+    { time: 6.6, text: `It's divided into four engaging parts:` },
+    { time: 10.5, text: `No. 1: Comic story` },
+    { time: 13.1, text: `No. 2: Listening comprehension quiz` },
+    { time: 16.8, text: `No. 3: Vocabulary quiz` },
+    { time: 19.9, text: `No. 4: Level assessment` },
+    { time: 22.7, text: `Which level are you? Let's get started!` },
+    { time: 26.6, text: `In a big forest, there are many trees.` },
+    { time: 34.9, text: `The sun is warm.` },
+    { time: 38.1, text: `In this forest, there are two friends:` },
+    { time: 46.0, text: `A busy squirrel named Nutkin, and a happy hedgehog named Prickles.` },
+    { time: 61.5, text: `Nutkin works hard every day.` },
+    { time: 65.9, text: `He runs from tree to tree.` },
+    { time: 73.2, text: `He collects acorns and nuts.` },
+    { time: 77.1, text: `Nutkin knows winter will come, so he works all day.` },
+    { time: 87.7, text: `Prickles is different. He likes to play and have fun.` },
+    { time: 97.0, text: `He walks in the forest.` },
+    { time: 100.0, text: `He looks at pretty leaves. He enjoys the warm sun.` },
+    { time: 110.5, text: `One sunny day, Nutkin sees Prickles walking by.` },
+    { time: 120.6, text: `"Morning, Prickles!` },
+    { time: 123.1, text: `It's a nice day to work.` },
+    { time: 129.8, text: `Want to help me collect acorns?"` },
+    { time: 137.2, text: `"Hi Nutkin!` },
+    { time: 139.3, text: `Why work on a nice day?` },
+    { time: 142.3, text: `Let's have fun!` },
+    { time: 147.9, text: `We can walk and look at pretty leaves."` },
+    { time: 155.4, text: `"That sounds nice, but I need to save food for winter.` },
+    { time: 162.1, text: `It's important to plan.` },
+    { time: 168.7, text: `Winter can be cold."` },
+    { time: 175.1, text: `"Oh Nutkin, Winter is far away.` },
+    { time: 180.1, text: `Don't worry!` },
+    { time: 181.9, text: `Let's enjoy today."` },
+    { time: 188.3, text: `Nutkin shakes his head.` },
+    { time: 190.8, text: `He knows it's important to work.` },
+    { time: 197.8, text: `He runs off to find more acorns.` },
+    { time: 202.5, text: `Prickles watches him go, then walks to a big tree to rest.` },
+    { time: 212.7, text: `Every day, Nutkin works hard.` },
+    { time: 217.0, text: `He finds many acorns and nuts.` },
+    { time: 224.2, text: `He takes them to his treehouse.` },
+    { time: 230.7, text: `Prickles just walks around.` },
+    { time: 237.7, text: `He looks at leaves and plays with other animals.` },
+    { time: 246.9, text: `One day, Nutkin sees Prickles resting under a tree.` },
+    { time: 256.2, text: `"Prickles, you should help me work.` },
+    { time: 269.2, text: `We need to be ready."` },
+    { time: 275.1, text: `"No way, Nutkin!` },
+    { time: 277.5, text: `I want to have fun now. There's time to work later."` },
+    { time: 287.5, text: `"But Prickles, if you don't work now, you might not have food in winter."` },
+    { time: 300.1, text: `"Don't worry, Nutkin. Everything will be fine."` },
+    { time: 309.7, text: `Days pass.` },
+    { time: 312.1, text: `The weather gets colder. Leaves turn yellow and red.` },
+    { time: 319.1, text: `They fall to the ground.` },
+    { time: 325.4, text: `Nutkin works even harder now.` },
+    { time: 329.1, text: `He knows winter is coming soon.` },
+    { time: 336.7, text: `One cool day, Nutkin sees Prickles.` },
+    { time: 341.5, text: `He looks worried.` },
+    { time: 348.0, text: `"Prickles, it's getting cold.` },
+    { time: 352.5, text: `Did you save any food for winter?"` },
+    { time: 360.5, text: `"Food? No, I didn't.` },
+    { time: 367.3, text: `I was having too much fun!` },
+    { time: 370.8, text: `I forgot about saving food."` },
+    { time: 377.9, text: `"Oh no!` },
+    { time: 380.2, text: `You need to get ready for winter.` },
+    { time: 384.9, text: `It will be here soon."` },
+    { time: 391.6, text: `"It's okay. I can find food when I need it.` },
+    { time: 401.1, text: `There are still some berries left."` },
+    { time: 408.4, text: `More time passes.` },
+    { time: 411.5, text: `Now it's very cold. Snow covers the ground.` },
+    { time: 421.7, text: `Prickles can't find any food.` },
+    { time: 425.1, text: `He's cold and hungry.` },
+    { time: 432.0, text: `One snowy day, Prickles goes to Nutkin's treehouse.` },
+    { time: 441.5, text: `"Nutkin!` },
+    { time: 443.0, text: `Nutkin!` },
+    { time: 444.6, text: `I'm so cold and hungry.` },
+    { time: 448.7, text: `I can't find any food.` },
+    { time: 452.4, text: `Can you help me?"` },
+    { time: 458.1, text: `"Oh, Prickles.` },
+    { time: 460.6, text: `I told you about winter.` },
+    { time: 464.4, text: `But don't worry, I'll share my food with you.` },
+    { time: 469.7, text: `That's what friends are for."` },
+    { time: 475.9, text: `"Thank you, Nutkin.` },
+    { time: 478.6, text: `You're a good friend. I'm sorry I didn't listen before."` },
+    { time: 489.2, text: `Nutkin shares his acorns with Prickles.` },
+    { time: 493.6, text: `Prickles is very thankful.` },
+    { time: 496.9, text: `He knows Nutkin was right.` },
+    { time: 503.3, text: `"Nutkin, you were right.` },
+    { time: 506.3, text: `I should have worked harder when it was warm.` },
+    { time: 510.7, text: `Now I have no food."` },
+    { time: 516.1, text: `"It's okay, Prickles. We all make mistakes.` },
+    { time: 525.3, text: `We can work together now.` },
+    { time: 527.5, text: `I can teach you how to collect food."` },
+    { time: 537.2, text: `Nutkin teaches Prickles how to find and store food.` },
+    { time: 543.0, text: `At first, it's hard for Prickles.` },
+    { time: 546.3, text: `He's not used to working, but soon he starts to like it.` },
+    { time: 556.7, text: `"This work is hard, Nutkin, but it feels good to help.` },
+    { time: 562.7, text: `I like doing something important."` },
+    { time: 569.8, text: `"Yes, it does feel good.` },
+    { time: 573.8, text: `And when we work together, it's easier and more fun."` },
+    { time: 584.1, text: `All winter, Nutkin and Prickles work together.` },
+    { time: 589.7, text: `Prickles learns many new things.` },
+    { time: 593.0, text: `He learns how to find the best acorns and how to store them safely.` },
+    { time: 604.3, text: `Finally, winter ends.` },
+    { time: 606.8, text: `Spring comes again.` },
+    { time: 609.5, text: `New leaves grow on the trees.` },
+    { time: 616.8, text: `"Nutkin, thank you for helping me all winter.` },
+    { time: 621.7, text: `I learned so much.` },
+    { time: 625.3, text: `You're a great teacher and a good friend."` },
+    { time: 633.9, text: `"You're welcome, Prickles.` },
+    { time: 637.0, text: `I'm glad we're friends.` },
+    { time: 640.5, text: `You worked very hard this winter.` },
+    { time: 644.5, text: `I'm proud of you."` },
+    { time: 650.4, text: `"This spring, I want to help you collect acorns.` },
+    { time: 654.9, text: `I know how important it is now."` },
+    { time: 661.7, text: `"That's great!` },
+    { time: 664.0, text: `We'll have fun and work hard together.` },
+    { time: 668.9, text: `And maybe we can take some time to play too."` },
+    { time: 678.1, text: `From that day on, Nutkin and Prickles work together in the forest.` },
+    { time: 684.9, text: `They collected acorns and nuts.` },
+    { time: 689.2, text: `But they also took time to play and enjoy the sunshine.` },
+    { time: 702.1, text: `Prickles learned that working hard is important.` },
+    { time: 706.9, text: `He knew now that planning for the future was good.` },
+    { time: 715.2, text: `But Nutkin learned something too.` },
+    { time: 719.7, text: `He learned it's okay to have fun sometimes.` },
+    { time: 728.3, text: `One sunny day, as they worked together under a big oak tree, Nutkin turned to Prickles.` },
+    { time: 740.7, text: `"Remember, Prickles, it's good to work hard and plan ahead.` },
+    { time: 748.2, text: `But it's also good to enjoy today."` },
+    { time: 756.7, text: `"You're right, Nutkin.` },
+    { time: 758.6, text: `And don't forget to have some fun too!` },
+    { time: 762.5, text: `Life is better when we have both work and play."` },
+    { time: 771.7, text: `And so, the squirrel and the hedgehog became the best of friends.` },
+    { time: 777.9, text: `They worked hard together in the pretty forest.` },
+    { time: 781.9, text: `But they also played and had fun.` },
+    { time: 785.2, text: `They enjoyed all the seasons, from the warm days of summer to the cold days of winter.` },
+    { time: 793.7, text: `They knew that life was best when they helped each other and worked together.` },
+    { time: 806.5, text: `Get ready to dive deeper into our comic story and test how well you understood what you heard.` },
+    { time: 818.5, text: `This quiz will help boost your listening skills and prepare you for real-world English conversations.` },
+    { time: 830.4, text: `Are you ready?` },
+    { time: 832.3, text: `Let's tune in and test your listening skills.` },
+    { time: 839.7, text: `No. 1` },
+    { time: 841.7, text: `Why does Nutkin work hard every day?` },
+    { time: 847.6, text: `A) He's preparing for winter.` },
+    { time: 851.7, text: `B) He likes to be busy.` },
+    { time: 856.1, text: `C) He wants to impress other animals.` },
+    { time: 862.5, text: `D) He's afraid of Prickles.` },
+    { time: 869.6, text: `Great! If you said A, he's preparing for winter, you're spot on! Nutkin knows that winter is coming and he needs to store food to survive.` },
+    { time: 887.3, text: `No. 2: How does Prickles spend his time at the beginning of the story?` },
+    { time: 896.9, text: `A) Playing and enjoying the warm days.` },
+    { time: 903.3, text: `B) Helping Nutkin collect acorns.` },
+    { time: 909.0, text: `C) Sleeping all day.` },
+    { time: 913.7, text: `D) Building a new house.` },
+    { time: 921.2, text: `If you picked A, playing and enjoying the warm days, you nailed it! Prickles is all about having fun and living in the moment at first.` },
+    { time: 937.4, text: `No. 3: What problem does Prickles face when winter comes?` },
+    { time: 945.6, text: `A) He has no food stored.` },
+    { time: 950.3, text: `B) He can't find his way home.` },
+    { time: 955.4, text: `C) His house is too cold.` },
+    { time: 961.0, text: `D) Nutkin won't talk to him.` },
+    { time: 968.5, text: `The correct answer is A.` },
+    { time: 971.9, text: `Prickles has no food stored.` },
+    { time: 976.1, text: `This is what leads him to ask Nutkin for help.` },
+    { time: 983.1, text: `No. 4: How does Nutkin help Prickles during the winter?` },
+    { time: 991.6, text: `A) He shares his stored food.` },
+    { time: 997.4, text: `B) He builds him a new house.` },
+    { time: 1003.6, text: `C) He teaches him to hibernate.` },
+    { time: 1009.5, text: `D) He finds him a job.` },
+    { time: 1016.5, text: `If you said A, he shares his stored food, you're right!` },
+    { time: 1023.5, text: `Nutkin shows true friendship by sharing his hard-earned food with Prickles.` },
+    { time: 1034.2, text: `No. 5: What new skill does Nutkin teach Prickles?` },
+    { time: 1043.0, text: `A) How to climb trees.` },
+    { time: 1047.6, text: `B) How to find and store food.` },
+    { time: 1053.5, text: `C) How to make friends.` },
+    { time: 1058.0, text: `D) How to sleep through the winter.` },
+    { time: 1065.8, text: `B is correct.` },
+    { time: 1068.0, text: `Nutkin teaches Prickles how to find and store food.` },
+    { time: 1075.9, text: `No. 6: How does Prickles feel about working by the end of the story?` },
+    { time: 1085.5, text: `A) He still hates it.` },
+    { time: 1090.2, text: `B) He enjoys it and finds it important.` },
+    { time: 1096.4, text: `C) He's indifferent about it.` },
+    { time: 1101.8, text: `D) He thinks it's unnecessary.` },
+    { time: 1108.8, text: `If you picked B, he enjoys it and finds it important, you got it!` },
+    { time: 1117.8, text: `Prickles learns to appreciate the value of work and planning ahead.` },
+    { time: 1127.8, text: `No. 7:` },
+    { time: 1129.8, text: `What does Nutkin learn from his friendship with Prickles?` },
+    { time: 1137.7, text: `A) That it's good to have some fun too.` },
+    { time: 1143.7, text: `B) That working all the time is best.` },
+    { time: 1150.3, text: `C) That hedgehogs are lazy.` },
+    { time: 1155.6, text: `D) That winter is dangerous.` },
+    { time: 1163.9, text: `A is the winner!` },
+    { time: 1166.1, text: `Nutkin learns that it's good to have some fun too.` },
+    { time: 1171.1, text: `Even hard-working squirrels need to enjoy life sometimes.` },
+    { time: 1179.7, text: `No. 8: How do Nutkin and Prickles spend their time together at the end of the story?` },
+    { time: 1192.4, text: `A) They only work and never play.` },
+    { time: 1198.4, text: `B) They balance work and play.` },
+    { time: 1204.6, text: `C) They only play and never work.` },
+    { time: 1210.8, text: `D) They go their separate ways.` },
+    { time: 1218.3, text: `B nails it! They balance work and play.` },
+    { time: 1226.5, text: `No. 9: What season signals the end of the story?` },
+    { time: 1233.9, text: `A) Summer` },
+    { time: 1236.6, text: `B) Autumn` },
+    { time: 1240.2, text: `C) Winter` },
+    { time: 1243.6, text: `D) Spring` },
+    { time: 1249.0, text: `If you said D, Spring, you're correct!` },
+    { time: 1254.6, text: `The story comes full circle, ending with the promise of new beginnings in spring.` },
+    { time: 1266.8, text: `No. 10: What is the main lesson of the story?` },
+    { time: 1274.4, text: `A) Never trust your friends.` },
+    { time: 1279.1, text: `B) Always work and never play.` },
+    { time: 1285.1, text: `C) It's important to balance work and fun.` },
+    { time: 1292.9, text: `D) Winter is the best season.` },
+    { time: 1301.2, text: `The answer is C.` },
+    { time: 1304.3, text: `It's important to balance work and fun.` },
+    { time: 1311.1, text: `Great job on the Listening Quiz!` },
+    { time: 1315.6, text: `You've just given your ears a fantastic workout.` },
+    { time: 1321.4, text: `Take a moment to reflect on what you've learned.` },
+    { time: 1328.4, text: `Which parts were easy?` },
+    { time: 1331.9, text: `Which were challenging? Remember, every listening exercise makes your English ears a little sharper.` },
+    { time: 1345.3, text: `Vocabulary quiz` },
+    { time: 1348.3, text: `No. 11` },
+    { time: 1350.3, text: `Nutkin was really _______ about the coming winter.` },
+    { time: 1356.2, text: `A) apprehensive` },
+    { time: 1359.6, text: `B) ecstatic` },
+    { time: 1363.1, text: `C) indifferent` },
+    { time: 1364.4, text: `D) boisterous` },
+    { time: 1371.9, text: `If you chose A, apprehensive, you're correct!` },
+    { time: 1377.2, text: `Nutkin was worried or anxious about the approaching winter.` },
+    { time: 1385.3, text: `No. 12: Yes, he was always _______ acorns and nuts.` },
+    { time: 1393.1, text: `A) discarding` },
+    { time: 1396.7, text: `B) consuming` },
+    { time: 1400.0, text: `C) hoarding  D) distributing` },
+    { time: 1408.7, text: `C is the right answer.` },
+    { time: 1412.3, text: `Hoarding means collecting and storing away, which is exactly what Nutkin was doing with the acorns and nuts.` },
+    { time: 1427.1, text: `No. 13: Prickles, on the other hand, was quite _______ about the whole situation.` },
+    { time: 1436.5, text: `A) vigilant` },
+    { time: 1440.1, text: `B) nonchalant` },
+    { time: 1443.7, text: `C) pessimistic` },
+    { time: 1445.0, text: `D) envious` },
+    { time: 1452.5, text: `Great job if you picked B!` },
+    { time: 1455.9, text: `Nonchalant means casually unconcerned or indifferent, which describes Prickles' initial attitude.` },
+    { time: 1469.1, text: `No. 14: What does "grateful" mean in the story?` },
+    { time: 1475.7, text: `A) Wanting more things.` },
+    { time: 1480.0, text: `B) Not caring about others.` },
+    { time: 1485.6, text: `C) Feeling angry about something.` },
+    { time: 1491.0, text: `D) Feeling thankful for something.` },
+    { time: 1499.0, text: `The answer is D.` },
+    { time: 1502.1, text: `Grateful means feeling thankful for something.` },
+    { time: 1507.7, text: `Prickles feels grateful for Nutkin's help and friendship.` },
+    { time: 1516.6, text: `No. 15: But when winter came, Prickles found himself in a real _______.` },
+    { time: 1528.9, text: `A) predicament` },
+    { time: 1532.7, text: `B) celebration` },
+    { time: 1536.4, text: `C) revelation  D) expedition` },
+    { time: 1542.1, text: `If you chose A, predicament, you're right!` },
+    { time: 1547.3, text: `A predicament is a difficult or unpleasant situation, which is what Prickles faced in winter.` },
+    { time: 1560.2, text: `No. 16: Yes, he was completely _______ for the harsh weather.` },
+    { time: 1568.0, text: `A) equipped` },
+    { time: 1571.3, text: `B) eager` },
+    { time: 1574.8, text: `C) unprepared  D) overjoyed` },
+    { time: 1583.5, text: `C is the correct answer. Unprepared means not ready, which describes Prickles' state when winter arrived.` },
+    { time: 1598.4, text: `No. 17:` },
+    { time: 1600.5, text: `Nutkin's decision to help Prickles was truly _______.` },
+    { time: 1605.8, text: `A) selfish` },
+    { time: 1608.7, text: `B) altruistic` },
+    { time: 1612.5, text: `C) impulsive` },
+    { time: 1616.1, text: `D) deceptive` },
+    { time: 1622.3, text: `B is the right choice here.` },
+    { time: 1625.2, text: `Altruistic means showing a selfless concern for others, which describes Nutkin's actions.` },
+    { time: 1636.7, text: `No. 18: Indeed, it showed the true _______ of their friendship.` },
+    { time: 1643.5, text: `A) deterioration` },
+    { time: 1647.5, text: `B) superficiality` },
+    { time: 1651.6, text: `C) ambiguity` },
+    { time: 1655.4, text: `D) depth` },
+    { time: 1663.3, text: `If you picked D, depth, you're correct!` },
+    { time: 1668.2, text: `This shows the profound nature of their friendship.` },
+    { time: 1676.4, text: `No. 19:` },
+    { time: 1678.4, text: `The experience seemed to _______` },
+    { time: 1682.5, text: `A) solidify` },
+    { time: 1685.7, text: `B) undermine` },
+    { time: 1689.5, text: `C) transform` },
+    { time: 1693.1, text: `D) obscure Prickles' perspective on work and preparation.` },
+    { time: 1704.1, text: `C is the right answer.` },
+    { time: 1706.9, text: `Transform means to change completely, which is what happened to Prickles' view on work.` },
+    { time: 1719.1, text: `No. 20:` },
+    { time: 1721.1, text: `Yes, and Nutkin learned to _______` },
+    { time: 1725.5, text: `A) abandon` },
+    { time: 1728.8, text: `B) intensify` },
+    { time: 1732.1, text: `C) temper` },
+    { time: 1735.3, text: `D) exaggerate his rigid work ethic with some fun.` },
+    { time: 1745.4, text: `Great if you chose C!` },
+    { time: 1748.5, text: `To temper means to moderate or soften, which is what Nutkin did with his work habits.` },
+    { time: 1762.1, text: `No. 21: What does "share" mean in the story?` },
+    { time: 1769.7, text: `A) To keep everything for yourself.` },
+    { time: 1775.6, text: `B) To give part of what you have to others.` },
+    { time: 1782.6, text: `C) To throw something away.` },
+    { time: 1787.5, text: `D) To find new food.` },
+    { time: 1794.8, text: `The correct answer is B.` },
+    { time: 1797.7, text: `To share means to give part of what you have to others.` },
+    { time: 1805.5, text: `No. 22: What does "balance" mean?` },
+    { time: 1811.2, text: `A) To fall down.` },
+    { time: 1815.2, text: `B) To work all the time.` },
+    { time: 1820.1, text: `C) To have equal amounts of different things.` },
+    { time: 1827.0, text: `D) To play all the time.` },
+    { time: 1833.5, text: `C is the winner! To balance means to have equal amounts of different things.` },
+    { time: 1843.5, text: `Remember, no matter your level, consistent practice is key to improving your English skills.` },
+    { time: 1854.3, text: `Keep up the great work and don't hesitate to revisit these lessons to reinforce your learning.` },
+    { time: 1866.9, text: `You've exercised your listening skills, expanded your vocabulary, and put your knowledge to the test.` },
+    { time: 1880.8, text: `Now let's see how you've done overall.` },
+    { time: 1886.6, text: `Total level assessment` },
+    { time: 1890.3, text: `Based on your performance across all quizzes,` },
+    { time: 1895.7, text: `we can assess your current English level.` },
+    { time: 1901.1, text: `Here's how it breaks down:` },
+    { time: 1905.0, text: `22 correct answers: Your level is B2 Upper Intermediate` },
+    { time: 1915.5, text: `21 to 16 correct answers:` },
+    { time: 1920.8, text: `Your level is B1 Intermediate` },
+    { time: 1926.4, text: `15 to 7 correct answers:` },
+    { time: 1930.9, text: `Your level is A2 Pre-intermediate` },
+    { time: 1937.1, text: `6 to 1 correct answers: Your level is A1 Beginner` },
+    { time: 1947.2, text: `Remember, no matter your level, consistent practice is key to improving your English skills.` },
+    { time: 1957.7, text: `Keep up the great work and don't hesitate to revisit these lessons to reinforce your learning.` },
+    { time: 1971.3, text: `If you like stories about magical quests, talking animals, and learning important life lessons, you'll love "The Golden Gorilla"!` },
+    { time: 1989.1, text: `"Who dares to climb my mountain?"` },
+    { time: 1997.8, text: `"Uh... I'm Guru.` },
+    { time: 2000.5, text: `I'm looking for the golden gorilla."` }
+        ];
+		// 載入YouTube API
+        function loadYouTubeAPI() {
+            const tag = document.createElement('script');
+            tag.src = 'https://www.youtube.com/iframe_api';
+            const firstScriptTag = document.getElementsByTagName('script')[0];
+            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        }
+
+        // YouTube API 準備完成
+        function onYouTubeIframeAPIReady() {
+            createPlayer('8djWX4o1V0M');
+            displayLyrics();
+        }
+
+        // 建立播放器
+        function createPlayer(videoId) {
+            player = new YT.Player('player', {
+                height: '360',
+                width: '640',
+                videoId: videoId,
+                playerVars: {
+                    modestbranding: 1,
+                    rel: 0
+                },
+                events: {
+                    'onStateChange': onPlayerStateChange,
+                    'onError': onPlayerError
+                }
+            });
+        }
+
+        // 錯誤處理
+        function onPlayerError(event) {
+            console.error('Video player error:', event.data);
+        }
+
+        // 播放狀態改變
+        function onPlayerStateChange(event) {
+            if (event.data === YT.PlayerState.PLAYING) {
+                if (isContinuousMode) {
+                    startTimeUpdate();
+                }
+            } else if (event.data === YT.PlayerState.ENDED) {
+                if (isLooping && loopingIndex !== -1) {
+                    seekTo(lyrics[loopingIndex].time);
+                }
+            } else {
+                stopTimeUpdate();
+            }
+        }
+
+        // 開始循環播放特定句子
+        function startLooping(index) {
+            if (loopingIndex === index) {
+                stopLooping();
+                return;
+            }
+            stopLooping();
+            loopingIndex = index;
+            isLooping = true;
+            updateLoopButtons();
+            seekTo(lyrics[index].time);
+        }
+
+        // 停止循環播放
+        function stopLooping() {
+            loopingIndex = -1;
+            isLooping = false;
+            updateLoopButtons();
+        }
+
+        // 更新循環按鈕狀態
+        function updateLoopButtons() {
+            const buttons = document.querySelectorAll('.loop-btn');
+            buttons.forEach((btn, index) => {
+                if (index === loopingIndex) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        // 開始更新時間
+        function startTimeUpdate() {
+            clearInterval(currentInterval);
+            currentInterval = setInterval(() => {
+                const currentTime = player.getCurrentTime();
+                if (isLooping && loopingIndex !== -1) {
+                    const currentLine = lyrics[loopingIndex];
+                    const nextLine = lyrics[loopingIndex + 1];
+                    if (nextLine && currentTime >= nextLine.time) {
+                        seekTo(currentLine.time);
+                        return;
+                    }
+                }
+                updateActiveLyrics(currentTime);
+            }, 100);
+        }
+
+        // 停止更新時間
+        function stopTimeUpdate() {
+            if (currentInterval) {
+                clearInterval(currentInterval);
+                currentInterval = null;
+            }
+        }
+
+        // 更新當前歌詞
+        function updateActiveLyrics(currentTime) {
+            const lines = document.querySelectorAll('.lyrics-line');
+            lines.forEach((line, index) => {
+                const time = lyrics[index].time;
+                const nextTime = lyrics[index + 1]?.time || Infinity;
+                
+                if (currentTime >= time && currentTime < nextTime) {
+                    if (!line.classList.contains('active')) {
+                        line.classList.add('active');
+                        line.scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'center'
+                        });
+                    }
+                } else {
+                    line.classList.remove('active');
+                }
+            });
+        }
+
+        // 顯示歌詞
+        function displayLyrics() {
+            const lyricsDisplay = document.getElementById('lyricsDisplay');
+            lyricsDisplay.innerHTML = '';
+            
+            lyrics.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'lyrics-line';
+
+                const loopBtn = document.createElement('button');
+                loopBtn.className = 'loop-btn';
+                loopBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+                loopBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    startLooping(index);
+                };
+                div.appendChild(loopBtn);
+
+                const textSpan = document.createElement('span');
+                textSpan.className = 'lyrics-text';
+                textSpan.textContent = item.text;
+                textSpan.onclick = () => seekTo(item.time, index);
+                div.appendChild(textSpan);
+
+                lyricsDisplay.appendChild(div);
+            });
+        }
+
+        // 切換說明面板顯示狀態
+        function toggleHelp() {
+            const helpPanel = document.querySelector('.help-panel');
+            const backdrop = document.querySelector('.backdrop');
+            helpPanel.classList.toggle('show');
+            backdrop.classList.toggle('show');
+        }
+
+        // 點擊外部關閉說明面板
+        document.addEventListener('click', (e) => {
+            const helpPanel = document.querySelector('.help-panel');
+            const helpButton = document.querySelector('.help-button');
+            if (!helpPanel.contains(e.target) && !helpButton.contains(e.target)) {
+                helpPanel.classList.remove('show');
+                document.querySelector('.backdrop').classList.remove('show');
+            }
+        });
+
+        // 跳轉到指定時間
+        function seekTo(time, index) {
+            player.seekTo(time, true);
+            if (player.getPlayerState() !== YT.PlayerState.PLAYING) {
+                player.playVideo();
+            }
+
+            if (!isContinuousMode && index !== undefined) {
+                const currentLine = lyrics[index];
+                const nextLine = lyrics[index + 1];
+                
+                // 清除之前的計時器
+                if (window.pauseTimer) {
+                    clearTimeout(window.pauseTimer);
+                }
+
+                // 設置新的暫停計時器
+                window.pauseTimer = setTimeout(() => {
+                    if (!isContinuousMode) {
+                        const currentTime = player.getCurrentTime();
+                        const targetTime = nextLine ? nextLine.time : (currentLine.time + 5);
+                        
+                        if (currentTime >= targetTime) {
+                            player.pauseVideo();
+                        } else {
+                            const remainingTime = (targetTime - currentTime) * 1000;
+                            setTimeout(() => player.pauseVideo(), remainingTime);
+                        }
+                    }
+                }, (nextLine ? nextLine.time - time : 5) * 1000);
+            }
+        }
+
+        // 在模式切換時也要處理計時器
+        document.getElementById('modeToggle').addEventListener('change', function(e) {
+            isContinuousMode = e.target.checked;
+            
+            if (window.pauseTimer) {
+                clearTimeout(window.pauseTimer);
+            }
+            
+            if (!isContinuousMode && player && player.pauseVideo) {
+                player.pauseVideo();
+            }
+        });
+
+        // 初始化
+        loadYouTubeAPI();
+    </script>
+
+
+
+		</body>
+		</html>
