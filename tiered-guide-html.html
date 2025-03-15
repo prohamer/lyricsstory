@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>數位性剝削防治分層次指南</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft JhengHei", Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* 標題樣式 */
+        .header {
+            background-color: #4682B4;
+            color: white;
+            text-align: center;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 18px;
+        }
+        
+        /* 介紹區域 */
+        .intro {
+            background-color: #E6F3FF;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        /* 分隔線 */
+        .divider {
+            border-top: 1px solid #ccc;
+            margin: 30px 0;
+        }
+        
+        /* 年齡層級卡片 */
+        .age-card {
+            margin-bottom: 30px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .age-header {
+            padding: 15px;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .age-header:hover {
+            opacity: 0.9;
+        }
+        
+        .age-content {
+            padding: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease, padding 0.5s ease;
+        }
+        
+        .age-content.active {
+            padding: 20px;
+            max-height: 2000px;
+        }
+        
+        /* 不同年齡層的顏色 */
+        .age-7-10 .age-header {
+            background-color: #4682B4;
+        }
+        
+        .age-7-10 .age-content {
+            background-color: #E6F3FF;
+        }
+        
+        .age-11-14 .age-header {
+            background-color: #FFA500;
+        }
+        
+        .age-11-14 .age-content {
+            background-color: #FFF8E6;
+        }
+        
+        .age-15-17 .age-header {
+            background-color: #3CB371;
+        }
+        
+        .age-15-17 .age-content {
+            background-color: #F0FFF0;
+        }
+        
+        .emergency .age-header {
+            background-color: #DC3545;
+        }
+        
+        .emergency .age-content {
+            background-color: #FFF0F0;
+        }
+        
+        /* 內容區塊樣式 */
+        .section-title {
+            color: #333;
+            margin: 15px 0;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #ddd;
+        }
+        
+        .subsection {
+            margin-bottom: 20px;
+        }
+        
+        .subsection h4 {
+            margin-bottom: 10px;
+            color: #444;
+        }
+        
+        .dialogue-box {
+            background-color: #fff;
+            border-left: 3px solid #4682B4;
+            padding: 10px 15px;
+            margin: 15px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        
+        .dialogue-item {
+            margin-bottom: 10px;
+        }
+        
+        .dialogue-item p {
+            margin-bottom: 5px;
+        }
+        
+        .parent-dialogue {
+            color: #0066CC;
+        }
+        
+        ul, ol {
+            padding-left: 20px;
+            margin: 10px 0;
+        }
+        
+        li {
+            margin-bottom: 10px;
+        }
+        
+        /* 警告信號區塊 */
+        .warning-signs {
+            background-color: #FFFACD;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        
+        /* 底部區域 */
+        .footer {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f5f5f5;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        /* 下載按鈕 */
+        .download-btn {
+            display: inline-block;
+            background-color: #4682B4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 20px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: background-color 0.3s;
+        }
+        
+        .download-btn:hover {
+            background-color: #3A6D99;
+        }
+        
+        /* 資源連結樣式 */
+        .resources-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .resource-item {
+            background-color: #f5f5f5;
+            padding: 10px 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        /* 來源標記 */
+        .source-mark {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: rgba(255,255,255,0.8);
+            padding: 8px 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            font-size: 14px;
+        }
+        
+        /* 響應式設計 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 22px;
+            }
+            
+            .age-header {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 標題區域 -->
+        <div class="header">
+            <h1>數位性剝削防治分層次指南</h1>
+            <p>保護孩子遠離網路陷阱的分齡指南</p>
+        </div>
+        
+        <!-- 介紹區域 -->
+        <div class="intro">
+            <p>數位性剝削是當今兒童面臨的嚴重威脅之一。根據統計，2023年超過3000個兒少掉入數位性剝削陷阱，平均每天約有10個孩子受害。本指南根據孩子的年齡和數位接觸程度分為三個層次，幫助家長和教育者更精準地提供防護措施。</p>
+            
+            <!-- 下載按鈕 -->
+            <div style="text-align: center;">
+                <button id="downloadBtn" class="download-btn">下載完整PDF指南</button>
+            </div>
+        </div>
+        
+        <div class="divider"></div>
+        
+        <!-- 第一層：7-10歲 -->
+        <div class="age-card age-7-10">
+            <div class="age-header" onclick="toggleCard(this)">
+                <span>第一層：初階防護指南（適合7-10歲兒童）</span>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="age-content">
+                <p>這個階段的孩子可能剛開始接觸數位設備和簡單的網路遊戲。重點應放在建立基礎安全意識和培養孩子的安全習慣。</p>
+                
+                <h3 class="section-title">關鍵概念教導：「網路陌生人」</h3>
+                
+                <div class="subsection">
+                    <h4>簡單解釋網路危險：</h4>
+                    <ul>
+                        <li>使用童話故事比喻（如「小紅帽」、「三隻小豬」）說明網路陌生人的危險</li>
+                        <li>運用簡單圖像，清楚區分安全／不安全行為</li>
+                    </ul>
+                </div>
+                
+                <div class="subsection">
+                    <h4>實用對話起點：</h4>
+                    <div class="dialogue-box">
+                        <div class="dialogue-item">
+                            <p class="parent-dialogue">1. 「在網路上遇到不認識的人，就像在路上遇到陌生人一樣，不要跟他們說話」</p>
+                        </div>
+                        <div class="dialogue-item">
+                            <p class="parent-dialogue">2. 「如果有人在遊戲中送你禮物或問你私人問題，要馬上告訴爸爸媽媽」</p>
+                        </div>
+                        <div class="dialogue-item">
+                            <p class="parent-dialogue">3. 「身體是你的，身體的照片也是你的秘密，不要給任何人看」</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <h3 class="section-title">實際措施：</h3>
+                
+                <div class="subsection">
+                    <h4>設備設定：</h4>
+                    <ul>
+                        <li>將遊戲帳號設為兒童模式</li>
+                        <li>關閉所有私訊功能</li>
+                        <li>使用家長監控軟體，限制可訪問的內容</li>
+                        <li>將設備放在家中公共區域使用</li>
+                    </ul>
+                </div>
+                
+                <div class="subsection">
+                    <h4>日常互動：</h4>
+                    <ul>
+                        <li>經常與孩子一起玩遊戲，了解遊戲內容</li>
+                        <li>教導簡單的隱私概念（「私密的事情不在網路上說」）</li>
+                        <li>建立「有疑問就先問」的習慣</li>
+                    </ul>
+                </div>
+                
+                <div class="warning-signs">
+                    <h4>示警信號：</h4>
+                    <ul>
+                        <li>孩子接收來源不明的遊戲點數或虛擬物品</li>
+                        <li>孩子突然變得隱秘，不願分享螢幕內容</li>
+                        <li>孩子表現出對陌生網友過度興奮或信任</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 第二層：11-14歲 -->
+        <div class="age-card age-11-14">
+            <div class="age-header" onclick="toggleCard(this)">
+                <span>第二層：進階防護指南（適合11-14歲兒童）</span>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="age-content">
+                <p>這個階段的孩子可能已開始使用社群媒體，參與多人線上遊戲，具備基本數位技能。重點應放在識別風險和拒絕誘導。</p>
+                
+                <h3 class="section-title">風險警覺：「遊戲與社群的隱藏陷阱」</h3>
+                
+                <div class="subsection">
+                    <h4>詳細解釋可能的誘導手法：</h4>
+                    <ul>
+                        <li>團隊遊戲中的「網公網婆」現象及其風險</li>
+                        <li>虛擬物品、遊戲點數交換的危險性</li>
+                        <li>短影音平台的「讚數換尺度」問題</li>
+                        <li>識別偽裝成同齡人的成年人（變聲器、照片造假等技術）</li>
+                    </ul>
+                </div>
+                
+                <div class="subsection">
+                    <h4>建議對話內容：</h4>
+                    <div class="dialogue-box">
+                        <div class="dialogue-item">
+                            <p class="parent-dialogue">1. 「有人說要送你遊戲點數或裝備，但要你做某些事情作為交換，這往往是陷阱」</p>
+                        </div>
+                        <div class="dialogue-item">
+                            <p class="parent-dialogue">2. 「在網路上認識的人，很可能不是他們說的那樣。有些人會假裝是小孩子」</p>
+                        </div>
+                        <div class="dialogue-item">
+                            <p class="parent-dialogue">3. 「如果有人要你做讓你感到不舒服的事，即使是你認為的『朋友』，你永遠有權利說不」</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <h3 class="section-title">實際措施：</h3>
+                
+                <div class="subsection">
+                    <h4>設備與隱私設定：</h4>
+                    <ul>
+                        <li>帳號設為非公開，限制誰可以留言和私訊</li>
+                        <li>啟用社群媒體安全功能，如年齡限制和內容過濾</li>
+                        <li>審查並選擇適合年齡的遊戲和應用程式</li>
+                        <li>教導如何使用隱私設定和封鎖功能</li>
+                    </ul>
+                </div>
+                
+                <div class="subsection">
+                    <h4>互動與溝通：</h4>
+                    <ul>
+                        <li>定期與孩子討論他們的網路活動，但避免過度監控</li>
+                        <li>鼓勵開放式對話，不以責備態度看待孩子的疑問</li>
+                        <li>角色扮演如何應對網路上的誘導情境</li>
+                        <li>與孩子討論「網紅文化」的利弊，培養媒體素養</li>
+                    </ul>
+                </div>
+                
+                <div class="warning-signs">
+                    <h4>示警信號：</h4>
+                    <ul>
+                        <li>孩子收到過多來源不明的私訊或交友邀請</li>
+                        <li>孩子突然有不明來源的金錢或虛擬物品</li>
+                        <li>孩子過度關注社群平台上的讚數和評論</li>
+                        <li>孩子與網友建立密切關係，但不願分享詳情</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 第三層：15-17歲 -->
+        <div class="age-card age-15-17">
+            <div class="age-header" onclick="toggleCard(this)">
+                <span>第三層：深度防護指南（適合15-17歲青少年）</span>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="age-content">
+                <p>這個階段的青少年通常已經深度使用各種社群平台和數位工具，開始建立獨立的網路身份。重點應放在自主判斷和安全界限的建立。</p>
+                
+                <h3 class="section-title">批判性思考：「識別心理操控與設定界限」</h3>
+                
+                <div class="subsection">
+                    <h4>深入探討操控機制：</h4>
+                    <ul>
+                        <li>分析「物質型」、「關係型」、「夢想型」三種性剝削手法的心理機制</li>
+                        <li>討論熟人犯罪的可能性（包括師長、親友等）</li>
+                        <li>探討如何辨識長期建立的信任關係中的不當要求</li>
+                        <li>分析私訊邀約、品牌合作等騙局的常見模式</li>
+                    </ul>
+                </div>
+                
+                <div class="subsection">
+                    <h4>開放討論話題：</h4>
+                    <div class="dialogue-box">
+                        <div class="dialogue-item">
+                            <p class="parent-dialogue">1. 「如果有人說你很有潛力，可以幫你實現夢想，但要求你做一些『犧牲』，這通常是什麼情況？」</p>
+                        </div>
+                        <div class="dialogue-item">
+                            <p class="parent-dialogue">2. 「你認為為什麼有些人會在網路上分享私密照片？可能的後果是什麼？」</p>
+                        </div>
+                        <div class="dialogue-item">
+                            <p class="parent-dialogue">3. 「如果朋友遇到性剝削威脅，你會如何幫助他們？」</p>
+                        </div>
+                        <div class="dialogue-item">
+                            <p class="parent-dialogue">4. 「網路上的關係與現實生活中的關係有什麼不同？如何判斷真誠與虛假？」</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <h3 class="section-title">實際措施：</h3>
+                
+                <div class="subsection">
+                    <h4>深度數位素養：</h4>
+                    <ul>
+                        <li>教導識別網路詐騙和性剝削的具體跡象</li>
+                        <li>討論個人資料與數位足跡的長期影響</li>
+                        <li>探討如何安全管理自己的網路形象</li>
+                        <li>提供資訊辨別能力，如何查證不明來源的邀約</li>
+                    </ul>
+                </div>
+                
+                <div class="subsection">
+                    <h4>自主防護能力：</h4>
+                    <ul>
+                        <li>與青少年共同制定合理的個人網路安全規則</li>
+                        <li>分享實際案例（適當匿名化）及其警示意義</li>
+                        <li>提供資源：援助熱線、諮詢管道、報警流程</li>
+                        <li>練習應對進退技巧，如何委婉但堅定地拒絕不當要求</li>
+                    </ul>
+                </div>
+                
+                <div class="warning-signs">
+                    <h4>危險信號：</h4>
+                    <ul>
+                        <li>青少年突然改變社交圈，與現實朋友疏遠</li>
+                        <li>收到不尋常的禮物或突然有額外收入來源</li>
+                        <li>對某些話題變得異常敏感或防備</li>
+                        <li>情緒波動大，表現焦慮、恐懼或羞恥</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 特別章節：如果已經發生了... -->
+        <div class="age-card emergency">
+            <div class="age-header" onclick="toggleCard(this)">
+                <span>特別章節：「如果已經發生了...」</span>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="age-content">
+                <p>無論做多少預防，都可能有孩子已經掉入陷阱。這一節提供應對已發生情況的指導。</p>
+                
+                <h3 class="section-title">重要原則：</h3>
+                
+                <div class="subsection">
+                    <h4>1. 保持冷靜，不指責</h4>
+                    <ul>
+                        <li>避免「為什麼你會這麼做？」等質問</li>
+                        <li>強調「這不是你的錯」，減輕羞恥感</li>
+                        <li>感謝孩子勇於告知，肯定他們尋求幫助的勇氣</li>
+                    </ul>
+                </div>
+                
+                <div class="subsection">
+                    <h4>2. 立即行動</h4>
+                    <ul>
+                        <li>保存證據（截圖、聊天記錄），但不要繼續互動</li>
+                        <li>停止任何支付或進一步的要求</li>
+                        <li>聯繫專業機構尋求協助</li>
+                    </ul>
+                </div>
+                
+                <div class="subsection">
+                    <h4>3. 尋求專業幫助</h4>
+                    <ul>
+                        <li>報警並尋求法律諮詢</li>
+                        <li>考慮心理輔導，幫助孩子處理創傷</li>
+                        <li>與學校輔導老師合作，提供全面支持</li>
+                    </ul>
+                </div>
+                
+                <div class="subsection">
+                    <h4>4. 重建信任與安全感</h4>
+                    <ul>
+                        <li>優先處理孩子的情緒需求</li>
+                        <li>適度調整數位使用規則，但避免完全禁止使用</li>
+                        <li>共同討論如何從經歷中學習並重新建立安全界限</li>
+                    </ul>
+                </div>
+                
+                <h3 class="section-title">實用資源：</h3>
+                <div class="resources-list">
+                    <div class="resource-item">兒少保護專線：113</div>
+                    <div class="resource-item">婦幼警察隊</div>
+                    <div class="resource-item">校園輔導資源</div>
+                    <div class="resource-item">心理諮商服務</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="divider"></div>
+        
+        <!-- 結語 -->
+        <div class="footer">
+            <h3>結語</h3>
+            <p>數位世界既是機會也有風險。通過分層次的教育和防護，我們能夠幫助孩子在享受數位世界便利的同時，也保護自己免受傷害。最重要的不是監控或限制，而是教育、溝通和陪伴，讓孩子擁有在數位環境中保護自己的知識和能力。</p>
+            
+            <button id="downloadBtnBottom" class="download-btn">下載完整PDF指南</button>
+        </div>
+        
+        <!-- 文章來源 -->
+        <div class="source-mark">
+            <p>文章來自：<strong>趙逸帆老師</strong></p>
+        </div>
+    </div>
+    
+    <script>
+        // 展開/收合卡片內容
+        function toggleCard(element) {
+            // 找到對應的內容區域
+            const content = element.nextElementSibling;
+            // 找到箭頭圖標
+            const icon = element.querySelector('.toggle-icon');
+            
+            // 切換active類
+            content.classList.toggle('active');
+            icon.classList.toggle('active');
+        }
+        
+        // 頁面加載時保持所有卡片收合
+        document.addEventListener('DOMContentLoaded', function() {
+            // 獲取所有卡片標題
+            const headers = document.querySelectorAll('.age-header');
+            // 不自動展開任何卡片
+            
+            // 添加滾動監聽，實現卡片進入視窗時的動畫效果
+            const cards = document.querySelectorAll('.age-card');
+            
+            function checkScroll() {
+                cards.forEach(card => {
+                    const cardPosition = card.getBoundingClientRect();
+                    // 當卡片進入視窗範圍時
+                    if (cardPosition.top < window.innerHeight && cardPosition.bottom > 0) {
+                        card.style.transition = "transform 0.5s, opacity 0.5s";
+                        card.style.transform = "translateY(0)";
+                        card.style.opacity = "1";
+                    }
+                });
+            }
+            
+            // 初始設置
+            cards.forEach(card => {
+                card.style.transform = "translateY(20px)";
+                card.style.opacity = "0";
+            });
+            
+            // 檢查初始位置
+            checkScroll();
+            
+            // 添加滾動事件監聽
+            window.addEventListener('scroll', checkScroll);
+            
+            // 下載按鈕功能
+            // 下載按鈕功能
+document.getElementById('downloadBtn').addEventListener('click', generatePDF);
+document.getElementById('downloadBtnBottom').addEventListener('click', generatePDF);
+
+function generatePDF() {
+    alert('正在準備下載檔案...');
+    
+    // 先臨時展開所有內容以確保完整獲取
+    const allCards = document.querySelectorAll('.age-card');
+    
+    allCards.forEach(card => {
+        const content = card.querySelector('.age-content');
+        if (!content.classList.contains('active')) {
+            content.classList.add('temp-active');
+            content.style.maxHeight = 'none';
+            content.style.padding = '20px';
+        }
+    });
+    
+    // 獲取內容
+    const headerContent = document.querySelector('.header').innerHTML;
+    const introContent = document.querySelector('.intro').innerHTML;
+    const cardsContent = Array.from(document.querySelectorAll('.age-card')).map(card => {
+        const header = card.querySelector('.age-header').textContent.trim();
+        const content = card.querySelector('.age-content').innerHTML;
+        return `
+            <div class="age-section ${card.classList[1]}">
+                <h2>${header}</h2>
+                ${content}
+            </div>
+        `;
+    }).join('');
+    const footerContent = document.querySelector('.footer').innerHTML;
+    
+    // 創建格式化的HTML文件
+    const fullHTML = `
+    <!DOCTYPE html>
+    <html lang="zh-TW">
+    <head>
+        <meta charset="UTF-8">
+        <title>數位性剝削防治分層次指南</title>
+        <style>
+            body {
+                font-family: "Microsoft JhengHei", Arial, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                margin: 40px;
+            }
+            h1 {
+                color: #4682B4;
+                text-align: center;
+            }
+            h2 {
+                color: #4682B4;
+                border-bottom: 1px solid #ddd;
+                padding-bottom: 5px;
+                margin-top: 30px;
+            }
+            h3 {
+                color: #555;
+                margin-top: 20px;
+            }
+            .intro {
+                background-color: #f5f5f5;
+                padding: 15px;
+                border-radius: 5px;
+                margin-bottom: 20px;
+            }
+            .age-section {
+                margin-bottom: 30px;
+                padding: 20px;
+                border-radius: 5px;
+            }
+            .age-7-10 {
+                background-color: #E6F3FF;
+            }
+            .age-11-14 {
+                background-color: #FFF8E6;
+            }
+            .age-15-17 {
+                background-color: #F0FFF0;
+            }
+            .emergency {
+                background-color: #FFF0F0;
+            }
+            .warning-signs {
+                background-color: #FFFACD;
+                padding: 15px;
+                border-radius: 5px;
+                margin: 15px 0;
+            }
+            .resources-list {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 15px;
+                margin: 20px 0;
+            }
+            .resource-item {
+                background-color: #f5f5f5;
+                padding: 10px 15px;
+                border-radius: 5px;
+            }
+            .footer {
+                text-align: center;
+                margin-top: 30px;
+                padding: 20px;
+                background-color: #f5f5f5;
+                border-radius: 5px;
+            }
+            .source {
+                text-align: right;
+                font-style: italic;
+                margin-top: 30px;
+            }
+            .dialogue-box {
+                background-color: #fff;
+                border-left: 3px solid #4682B4;
+                padding: 10px 15px;
+                margin: 15px 0;
+                border-radius: 0 5px 5px 0;
+            }
+            .parent-dialogue {
+                color: #0066CC;
+            }
+            ul, ol {
+                padding-left: 20px;
+                margin: 10px 0;
+            }
+            li {
+                margin-bottom: 10px;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>數位性剝削防治分層次指南</h1>
+        
+        <div class="intro">
+            數位性剝削是當今兒童面臨的嚴重威脅之一。根據統計，2023年超過3000個兒少掉入數位性剝削陷阱，平均每天約有10個孩子受害。本指南根據孩子的年齡和數位接觸程度分為三個層次，幫助家長和教育者更精準地提供防護措施。
+        </div>
+        
+        ${cardsContent}
+        
+        <div class="footer">
+            ${footerContent}
+        </div>
+        
+        <div class="source">
+            文章來自：趙逸帆老師
+        </div>
+    </body>
+    </html>`;
+    
+    // 恢復卡片原狀
+    allCards.forEach(card => {
+        const content = card.querySelector('.age-content');
+        if (content.classList.contains('temp-active')) {
+            content.classList.remove('temp-active');
+            content.style.maxHeight = '';
+            content.style.padding = '';
+        }
+    });
+    
+    // 創建Blob對象
+    const blob = new Blob([fullHTML], { type: 'text/html' });
+    
+    // 創建下載鏈接
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = '數位性剝削防治分層次指南.html';
+    
+    // 觸發下載
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // 釋放URL對象
+    setTimeout(() => {
+        URL.revokeObjectURL(link.href);
+    }, 100);
+}
+});
+</script>
+</body>
+</html>
