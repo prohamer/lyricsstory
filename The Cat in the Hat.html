@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+		<html>
+		<head>
+
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lyrics Player</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 10px;
+            background: #000;  /* 原本是 #f9f9f9 */
+			color: #fff;      /* 加入這行確保文字顏色 */
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            gap: 20px;
+        }
+        .video-container {
+            flex: 2;
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            background: #000;
+        }
+		/* 手機版樣式 */
+        @media (max-width: 768px) {
+          .video-container {
+                position: sticky;
+                top: 60px;  /* 加大這個值，配合 Google Sites 的標題列高度 */
+                z-index: 100;
+                margin-bottom: 10px;
+                /* 可能需要額外的 margin-top */
+                margin-top: 60px;  /* 加入這行，確保初始位置也正確 */
+            }
+
+            body {
+               /* 確保有足夠的頂部空間 */
+                 padding-top: 60px;
+            }
+			
+            .container {
+                flex-direction: column;
+                padding-top: 0;
+            }
+        }
+		
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .lyrics-container {
+            flex: 1;
+            height: calc(100vh - 40px);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background: #1a1a1a;  /* 原本是 white */
+			color: #fff;         /* 加入這行 */
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .lyrics-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 15px;
+            background: #2d2d2d;  /* 原本是 #f0f0f0 */
+			border-bottom: 1px solid #333;  /* 原本是 #ddd */
+            border-bottom: 1px solid #ddd;
+        }
+        .title {
+            font-weight: bold;
+        }
+        .mode-switch {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        .mode-label {
+            font-size: 0.9em;
+            color: #ccc;  /* 原本是 #666 */
+        }
+        #lyricsDisplay {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+        .lyrics-line {
+            padding: 10px;
+            margin: 5px 0;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+            line-height: 1.4;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+			color: #ccc;  /* 加入這行 */
+        }
+        .lyrics-line:hover {
+            background-color: #333;  /* 原本是 #f0f0f0 */
+        }
+        .lyrics-line.active {
+            background-color: #2196F3;  /* 可以保留藍色或改成 #1a1a1a */
+			color: #fff;  /* 加入這行 */
+            font-weight: bold;
+        }
+        .loop-btn {
+            padding: 5px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            opacity: 0.5;
+            transition: all 0.2s;
+            color: #c79ac5;  /* 原本是 #666 */
+        }
+        .loop-btn:hover {
+            opacity: 1;
+        }
+        .loop-btn.active {
+            color: #ec21f3;
+            opacity: 1;
+        }
+        .lyrics-text {
+            flex: 1;
+        }
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            .lyrics-container {
+                height: 50vh;
+            }
+        }
+        /* 說明按鈕樣式 */
+        .help-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+		.help-button:hover {
+            background: #1976D2;
+            transform: translateY(-2px);
+        }
+        /* 說明面板樣式 */
+        .help-panel {
+            position: fixed;
+            bottom: -100%;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 20px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            transition: bottom 0.3s ease;
+            z-index: 999;
+            max-height: 80vh;
+            overflow-y: auto;
+			color: #000;
+        }
+        .help-panel.show {
+            bottom: 0;
+        }
+        .help-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .help-section {
+            margin-bottom: 20px;
+        }
+        .help-section h3 {
+            color: #2196F3;
+            margin-bottom: 10px;
+        }
+        .help-list {
+            list-style: none;
+            padding: 0;
+        }
+        .help-list li {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .help-icon {
+            color: #666;
+            width: 24px;
+            text-align: center;
+        }
+        .close-help {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+        .backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 998;
+        }
+        .backdrop.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        @media (max-width: 768px) {
+            .help-panel {
+                max-height: 70vh;
+            }
+        }
+    </style>
+
+
+    <div class="container">
+        <div class="video-container">
+            <div id="player"></div>
+        </div>
+        <div class="lyrics-container">
+            <div class="lyrics-header">
+                <div class="title">字幕同步播放器</div>
+                <div class="mode-switch">
+                    <span class="mode-label">自動播放模式</span>
+                    <label class="switch">
+                        <input type="checkbox" id="modeToggle" checked="">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            <div id="lyricsDisplay"></div>
+        </div>
+    </div>
+    <!-- 說明按鈕 -->
+    <button class="help-button" onclick="toggleHelp()">
+        <i class="fas fa-question-circle"></i>
+        使用說明
+    </button>
+    <!-- 背景遮罩 -->
+    <div class="backdrop" onclick="toggleHelp()"></div>
+    <!-- 說明面板 -->
+    <div class="help-panel">
+        <button class="close-help" onclick="toggleHelp()">×</button>
+        <div class="help-content">
+		<div class="help-section">
+                <h3>播放模式</h3>
+                <ul class="help-list">
+                    <li>
+                        <i class="fas fa-play-circle help-icon"></i>
+                        <span>自動播放模式：影片會連續播放，歌詞自動跟隨（預設模式）</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-chalkboard-teacher help-icon"></i>
+                        <span>關閉自動播放模式：進入單句教學模式，點擊歌詞只播放單句，播完自動暫停</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-toggle-on help-icon"></i>
+                        <span>使用右上角的開關切換模式</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="help-section">
+                <h3>歌詞控制</h3>
+                <ul class="help-list">
+                    <li>
+                        <i class="fas fa-mouse-pointer help-icon"></i>
+                        <span>點擊任何歌詞行可跳轉到該位置</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-sync-alt help-icon"></i>
+                        <span>點擊歌詞前的循環按鈕可重複播放該句</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-sync-alt help-icon" style="color: #2196F3;"></i>
+                        <span>藍色圖標表示該句正在循環播放中</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="help-section">
+                <h3>教學模式使用技巧</h3>
+                <ul class="help-list">
+                    <li>
+                        <i class="fas fa-graduation-cap help-icon"></i>
+                        <span>適合逐句講解與練習</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-redo help-icon"></i>
+                        <span>可配合循環按鈕反覆練習困難句子</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-hand-point-up help-icon"></i>
+                        <span>點擊下一句繼續播放</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="help-section">
+                <h3>自動播放模式使用技巧</h3>
+                <ul class="help-list">
+                    <li>
+                        <i class="fas fa-music help-icon"></i>
+                        <span>適合完整聆聽歌曲</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-scroll help-icon"></i>
+                        <span>歌詞會自動捲動並高亮</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-random help-icon"></i>
+                        <span>可隨時點擊歌詞跳轉</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <script>
+        let player;
+        let currentInterval;
+        let loopingIndex = -1;
+        let isLooping = false;
+        let isContinuousMode = true;
+
+        // 歌詞數據
+        let lyrics = [
+        { time: 0.6, text: `Coming up in... 10` },
+    { time: 2.9, text: `Are you ready for Dr. Seuss story time, my friend?` },
+    { time: 5.4, text: `Stick around...` },
+    { time: 6.9, text: `and we'll play a fun game at the end.` },
+    { time: 8.7, text: `Gather 'round everyone.` },
+    { time: 10.4, text: `Oh, you too, silly goose.` },
+    { time: 12.6, text: `It's time to read The Cat in the Hat by Dr. Seuss.` },
+    { time: 17.2, text: `The sun did not shine.` },
+    { time: 19.2, text: `It was too wet to play.` },
+    { time: 21.1, text: `So we sat in the house All that cold, cold, wet day.` },
+    { time: 25.4, text: `I sat there with Sally.` },
+    { time: 26.8, text: `We sat there, we two.` },
+    { time: 28.6, text: `And I said, "How I wish We had something to do!"` },
+    { time: 32.6, text: `Too wet to go out And too cold to play ball.` },
+    { time: 35.5, text: `So we sat in the house. We did nothing at all.` },
+    { time: 38.8, text: `So all we could do was to Sit! Sit! Sit! Sit!` },
+    { time: 43.4, text: `And we did not like it. Not one little bit.` },
+    { time: 46.2, text: `And then Something went BUMP!` },
+    { time: 49.0, text: `How that bump made us jump!` },
+    { time: 51.2, text: `We looked! Then we saw him step in on the mat!` },
+    { time: 54.6, text: `We looked! And we saw him! The Cat in the Hat!` },
+    { time: 58.1, text: `And he said to us, "Why do you sit there like that?"` },
+    { time: 62.1, text: `"I know it is wet And the sun is not sunny. But we can have Lots of good fun that is funny!"` },
+    { time: 68.8, text: `"I know some good games we could play," Said the cat.` },
+    { time: 71.9, text: `"I know some new tricks," Said the Cat in the Hat.` },
+    { time: 75.5, text: `"A lot of good tricks. I will show them to you. Your mother Will not mind at all if I do."` },
+    { time: 82.3, text: `Then Sally and I Did not know what to say.` },
+    { time: 85.2, text: `Our mother was out of the house For the day.` },
+    { time: 88.2, text: `But our fish said, "No! No! Make that cat go away!` },
+    { time: 91.9, text: `Tell that Cat in the Hat You do NOT want to play.` },
+    { time: 94.8, text: `He should not be here. He should not be about.` },
+    { time: 97.4, text: `He should not be here When your mother is out!"` },
+    { time: 100.1, text: `"Now! Now! Have no fear. Have no fear!" said the cat.` },
+    { time: 104.6, text: `"My tricks are not bad," Said the Cat in the Hat.` },
+    { time: 107.5, text: `"Why, we can have Lots of good fun, if you wish, With a game that I call UP-UP-UP with a fish!"` },
+    { time: 115.9, text: `"Put me down!" said the fish.` },
+    { time: 117.9, text: `"This is no fun at all! Put me down!" said the fish.` },
+    { time: 121.5, text: `"I do NOT wish to fall!"` },
+    { time: 124.0, text: `"Have no fear!" said the cat. "I will not let you fall."` },
+    { time: 128.0, text: `I will hold you up high As I stand on a ball.` },
+    { time: 131.4, text: `With a book on one hand! And a cup on my hat!` },
+    { time: 134.7, text: `But that is not ALL I can do!' Said the cat...` },
+    { time: 138.3, text: `"Look at me! Look at me now!" said the cat.` },
+    { time: 141.2, text: `"With a cup and a cake On the top of my hat!` },
+    { time: 144.6, text: `I can hold up TWO books!` },
+    { time: 146.7, text: `I can hold up the fish!` },
+    { time: 148.5, text: `And a little toy ship! And some milk on a dish!` },
+    { time: 152.5, text: `And look! I can hop up and down on the ball!` },
+    { time: 155.8, text: `But that is not all! Oh, no. That is not all...` },
+    { time: 159.7, text: `Look at me! Look at me! Look at me NOW!` },
+    { time: 162.7, text: `It is fun to have fun But you have to know how.` },
+    { time: 166.3, text: `I can hold up the cup And the milk and the cake!` },
+    { time: 169.3, text: `I can hold up these books! And the fish on a rake!` },
+    { time: 172.7, text: `I can hold the toy ship And a little toy man!` },
+    { time: 176.2, text: `And look! With my tail I can hold a red fan!` },
+    { time: 179.9, text: `I can fan with the fan As I hop on the ball!` },
+    { time: 183.6, text: `But that is not all. Oh, no. That is not all..."` },
+    { time: 188.8, text: `That is what the cat said... Then he fell on his head!` },
+    { time: 193.7, text: `He came down with a bump From up there on the ball.` },
+    { time: 197.7, text: `And Sally and I, We saw ALL the things fall!` },
+    { time: 202.1, text: `And our fish came down, too. He fell into a pot!` },
+    { time: 205.0, text: `He said, "Do I like this? Oh, no! I do not.` },
+    { time: 209.0, text: `"This is not a good game," Said our fish as he lit.` },
+    { time: 212.8, text: `"No, I do not like it, Not one little bit!"` },
+    { time: 216.4, text: `"Now look what you did!" Said the fish to the cat.` },
+    { time: 219.9, text: `"Now look at this house! Look at this! Look at that!` },
+    { time: 223.0, text: `You sank our toy ship, Sank it deep in the cake.` },
+    { time: 225.9, text: `You shook up our house And you bent our new rake.` },
+    { time: 228.8, text: `You SHOULD NOT be here When our mother is not.` },
+    { time: 231.6, text: `You get out of this house!' Said the fish in the pot."` },
+    { time: 235.0, text: `"But I like to be here. Oh, I like it a lot!"` },
+    { time: 238.4, text: `Said the Cat in the Hat To the fish in the pot.` },
+    { time: 242.5, text: `"I will NOT go away. I do NOT wish to go!` },
+    { time: 245.8, text: `And so," said the Cat in the Hat, "So so so... I will show you Another good game that I know!"` },
+    { time: 253.1, text: `And then he ran out.` },
+    { time: 254.5, text: `And, then, fast as a fox, The Cat in the Hat Came back in with a box.` },
+    { time: 260.0, text: `A big red wood box.` },
+    { time: 262.1, text: `It was shut with a hook.` },
+    { time: 263.9, text: `"Now look at this trick," Said the cat. "Take a look!"` },
+    { time: 267.2, text: `Then he got up on top With a tip of his hat.` },
+    { time: 270.6, text: `"I call this game FUN-IN-A-BOX," Said the cat.` },
+    { time: 274.5, text: `"In this box are two things I will show to you now.` },
+    { time: 277.9, text: `You will like these two things," Said the cat with a bow.` },
+    { time: 281.9, text: `"I will pick up the hook. You will see something new.` },
+    { time: 285.4, text: `Two things. And I call them Thing One and Thing Two.` },
+    { time: 290.3, text: `These Things will not bite you.` },
+    { time: 292.3, text: `They want to have fun.'"` },
+    { time: 294.0, text: `Then, out of the box Came Thing Two and Thing One!` },
+    { time: 297.6, text: `And they ran to us fast.` },
+    { time: 300.0, text: `They said, "How do you do? Would you like to shake hands With Thing One and Thing Two?"` },
+    { time: 305.0, text: `And Sally and I Did not know what to do.` },
+    { time: 307.8, text: `So we had to shake hands With Thing One and Thing Two.` },
+    { time: 311.1, text: `We shook their two hands.` },
+    { time: 312.7, text: `But our fish said, "No! No! Those Things should not be In this house! Make them go!` },
+    { time: 318.6, text: `They should not be here When your mother is not!` },
+    { time: 321.2, text: `Put them out! Put them out!' Said the fish in the pot."` },
+    { time: 325.1, text: `"Have no fear, little fish," Said the Cat in the Hat.` },
+    { time: 329.1, text: `"These Things are good Things." And he gave them a pat.` },
+    { time: 332.4, text: `"They are tame. Oh, so tame! They have come here to play.` },
+    { time: 336.7, text: `They will give you some fun On this wet, wet, wet day.'"` },
+    { time: 342.2, text: `"Now, here is a game that they like," Said the cat.` },
+    { time: 345.1, text: `"They like to fly kites," Said the Cat in the Hat.` },
+    { time: 348.6, text: `"No! Not in the house!" Said the fish in the pot.` },
+    { time: 351.4, text: `"They should not fly kites In a house! They should not.` },
+    { time: 354.8, text: `Oh, the things they will bump! Oh, the things they will hit!` },
+    { time: 358.0, text: `Oh, I do not like it!` },
+    { time: 359.8, text: `Not one little bit!'"` },
+    { time: 361.7, text: `Then Sally and I Saw them run down the hall.` },
+    { time: 364.5, text: `We saw those two Things Bump their kites on the wall!` },
+    { time: 367.9, text: `Bump! Thump! Thump! Bump! Down the wall in the hall.` },
+    { time: 372.9, text: `Thing Two and Thing One!` },
+    { time: 374.6, text: `They ran up! They ran down!` },
+    { time: 377.1, text: `On the string of one kite We saw Mother's new gown!` },
+    { time: 380.7, text: `Her gown with the dots That are pink, white and red.` },
+    { time: 384.1, text: `Then we saw one kite bump On the head of her bed!` },
+    { time: 388.0, text: `Then those Things ran about With big bumps, jumps and kicks And with hops and big thumps And all kinds of bad tricks.` },
+    { time: 396.6, text: `And I said, "I do NOT like the way that they play!` },
+    { time: 400.8, text: `If Mother could see this, Oh, what would she say!"` },
+    { time: 404.5, text: `Then our fish said, "LOOK! LOOK!"` },
+    { time: 406.7, text: `And our fish shook with fear.` },
+    { time: 408.7, text: `"Your mother is on her way home! Do you hear?` },
+    { time: 411.7, text: `Oh, what will she do to us? What will she say?` },
+    { time: 414.7, text: `Oh, she will not like it To find us this way!"` },
+    { time: 417.6, text: `"So, DO something! Fast!" said the fish.` },
+    { time: 420.2, text: `"Do you hear?"` },
+    { time: 421.8, text: `I saw her. Your mother! Your mother is near!` },
+    { time: 425.4, text: `So, as fast as you can, Think of something to do!` },
+    { time: 428.2, text: `You will have to get rid of Thing One and Thing Two!'"` },
+    { time: 431.9, text: `So, as fast as I could, I went after my net.` },
+    { time: 434.7, text: `And I said, "With my net I can get them I bet.` },
+    { time: 438.4, text: `I bet, with my net, I can get those Things yet!"` },
+    { time: 442.3, text: `Then I let down my net. It came down with a PLOP!` },
+    { time: 445.6, text: `And I had them! At last! Those two Things had to stop.` },
+    { time: 449.9, text: `Then I said to the cat, "Now you do as I say. You pack up those Things And you take them away!"` },
+    { time: 457.0, text: `"Oh dear!" said the cat. "You did not like our game ... Oh dear.` },
+    { time: 461.7, text: `What a shame! What a shame! What a shame!"` },
+    { time: 465.8, text: `Then he shut up the Things In the box with the hook.` },
+    { time: 469.5, text: `And the cat went away With a sad kind of look.` },
+    { time: 473.8, text: `"That is good," said the fish. "He has gone away. Yes.` },
+    { time: 477.3, text: `But your mother will come. She will find this big mess!` },
+    { time: 480.2, text: `And this mess is so big And so deep and so tall,` },
+    { time: 483.9, text: `We can not pick it up. There is no way at all!"` },
+    { time: 488.0, text: `And THEN! Who was back in the house?` },
+    { time: 490.9, text: `Why, the cat!` },
+    { time: 492.9, text: `"Have no fear of this mess," Said the Cat in the Hat.` },
+    { time: 496.9, text: `"I always pick up all my playthings And so ... I will show you another Good trick that I know!"` },
+    { time: 504.6, text: `Then we saw him pick up All the things that were down.` },
+    { time: 508.1, text: `He picked up the cake, And the rake, and the gown,` },
+    { time: 511.3, text: `And the milk, and the strings, And the books, and the dish, And the fan, and the cup, And the ship, and the fish.` },
+    { time: 519.5, text: `And he put them away.` },
+    { time: 521.5, text: `Then he said, "That is that."` },
+    { time: 523.8, text: `And then he was gone With a tip of his hat.` },
+    { time: 527.4, text: `Then our mother came in And she said to us two, "Did you have any fun? Tell me. What did you do?"` },
+    { time: 534.3, text: `And Sally and I did not know What to say.` },
+    { time: 536.9, text: `Should we tell her The things that went on there that day?` },
+    { time: 540.4, text: `Should we tell her about it? Now, what SHOULD we do?` },
+    { time: 544.6, text: `Well... What would YOU do If your mother asked YOU?` },
+    { time: 551.9, text: `Let's play!` },
+    { time: 552.9, text: `Wow! Isn't reading fun?` },
+    { time: 554.9, text: `It's great to do.` },
+    { time: 556.6, text: `Now, let's play a game! Or two.` },
+    { time: 560.7, text: `Can you guess who this is? With mischief and glee?` },
+    { time: 566.3, text: `It's The Cat in the Hat!` },
+    { time: 568.7, text: `As fun as he can be.` },
+    { time: 571.1, text: `Who's this dynamic duo, with a numeral clue?` },
+    { time: 576.4, text: `Oh, you nailed it! It's Thing 1 and Thing 2!` },
+    { time: 580.5, text: `Do you know who this is? With a little red bow?` },
+    { time: 586.8, text: `It's Sally!` },
+    { time: 588.4, text: `You got it!` },
+    { time: 589.5, text: `Way to go!` },
+    { time: 591.1, text: `Oh, you did a great job. Our story's all done.` }
+        ];
+		// 載入YouTube API
+        function loadYouTubeAPI() {
+            const tag = document.createElement('script');
+            tag.src = 'https://www.youtube.com/iframe_api';
+            const firstScriptTag = document.getElementsByTagName('script')[0];
+            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        }
+
+        // YouTube API 準備完成
+        function onYouTubeIframeAPIReady() {
+            createPlayer('X5Irl_oWD6M');
+            displayLyrics();
+        }
+
+        // 建立播放器
+        function createPlayer(videoId) {
+            player = new YT.Player('player', {
+                height: '360',
+                width: '640',
+                videoId: videoId,
+                playerVars: {
+                    modestbranding: 1,
+                    rel: 0
+                },
+                events: {
+                    'onStateChange': onPlayerStateChange,
+                    'onError': onPlayerError
+                }
+            });
+        }
+
+        // 錯誤處理
+        function onPlayerError(event) {
+            console.error('Video player error:', event.data);
+        }
+
+        // 播放狀態改變
+        function onPlayerStateChange(event) {
+            if (event.data === YT.PlayerState.PLAYING) {
+                if (isContinuousMode) {
+                    startTimeUpdate();
+                }
+            } else if (event.data === YT.PlayerState.ENDED) {
+                if (isLooping && loopingIndex !== -1) {
+                    seekTo(lyrics[loopingIndex].time);
+                }
+            } else {
+                stopTimeUpdate();
+            }
+        }
+
+        // 開始循環播放特定句子
+        function startLooping(index) {
+            if (loopingIndex === index) {
+                stopLooping();
+                return;
+            }
+            stopLooping();
+            loopingIndex = index;
+            isLooping = true;
+            updateLoopButtons();
+            seekTo(lyrics[index].time);
+        }
+
+        // 停止循環播放
+        function stopLooping() {
+            loopingIndex = -1;
+            isLooping = false;
+            updateLoopButtons();
+        }
+
+        // 更新循環按鈕狀態
+        function updateLoopButtons() {
+            const buttons = document.querySelectorAll('.loop-btn');
+            buttons.forEach((btn, index) => {
+                if (index === loopingIndex) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        // 開始更新時間
+        function startTimeUpdate() {
+            clearInterval(currentInterval);
+            currentInterval = setInterval(() => {
+                const currentTime = player.getCurrentTime();
+                if (isLooping && loopingIndex !== -1) {
+                    const currentLine = lyrics[loopingIndex];
+                    const nextLine = lyrics[loopingIndex + 1];
+                    if (nextLine && currentTime >= nextLine.time) {
+                        seekTo(currentLine.time);
+                        return;
+                    }
+                }
+                updateActiveLyrics(currentTime);
+            }, 100);
+        }
+
+        // 停止更新時間
+        function stopTimeUpdate() {
+            if (currentInterval) {
+                clearInterval(currentInterval);
+                currentInterval = null;
+            }
+        }
+
+        // 更新當前歌詞
+        function updateActiveLyrics(currentTime) {
+            const lines = document.querySelectorAll('.lyrics-line');
+            lines.forEach((line, index) => {
+                const time = lyrics[index].time;
+                const nextTime = lyrics[index + 1]?.time || Infinity;
+                
+                if (currentTime >= time && currentTime < nextTime) {
+                    if (!line.classList.contains('active')) {
+                        line.classList.add('active');
+                        line.scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'center'
+                        });
+                    }
+                } else {
+                    line.classList.remove('active');
+                }
+            });
+        }
+
+        // 顯示歌詞
+        function displayLyrics() {
+            const lyricsDisplay = document.getElementById('lyricsDisplay');
+            lyricsDisplay.innerHTML = '';
+            
+            lyrics.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'lyrics-line';
+
+                const loopBtn = document.createElement('button');
+                loopBtn.className = 'loop-btn';
+                loopBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+                loopBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    startLooping(index);
+                };
+                div.appendChild(loopBtn);
+
+                const textSpan = document.createElement('span');
+                textSpan.className = 'lyrics-text';
+                textSpan.textContent = item.text;
+                textSpan.onclick = () => seekTo(item.time, index);
+                div.appendChild(textSpan);
+
+                lyricsDisplay.appendChild(div);
+            });
+        }
+
+        // 切換說明面板顯示狀態
+        function toggleHelp() {
+            const helpPanel = document.querySelector('.help-panel');
+            const backdrop = document.querySelector('.backdrop');
+            helpPanel.classList.toggle('show');
+            backdrop.classList.toggle('show');
+        }
+
+        // 點擊外部關閉說明面板
+        document.addEventListener('click', (e) => {
+            const helpPanel = document.querySelector('.help-panel');
+            const helpButton = document.querySelector('.help-button');
+            if (!helpPanel.contains(e.target) && !helpButton.contains(e.target)) {
+                helpPanel.classList.remove('show');
+                document.querySelector('.backdrop').classList.remove('show');
+            }
+        });
+
+        // 跳轉到指定時間
+        function seekTo(time, index) {
+            player.seekTo(time, true);
+            if (player.getPlayerState() !== YT.PlayerState.PLAYING) {
+                player.playVideo();
+            }
+
+            if (!isContinuousMode && index !== undefined) {
+                const currentLine = lyrics[index];
+                const nextLine = lyrics[index + 1];
+                
+                // 清除之前的計時器
+                if (window.pauseTimer) {
+                    clearTimeout(window.pauseTimer);
+                }
+
+                // 設置新的暫停計時器
+                window.pauseTimer = setTimeout(() => {
+                    if (!isContinuousMode) {
+                        const currentTime = player.getCurrentTime();
+                        const targetTime = nextLine ? nextLine.time : (currentLine.time + 5);
+                        
+                        if (currentTime >= targetTime) {
+                            player.pauseVideo();
+                        } else {
+                            const remainingTime = (targetTime - currentTime) * 1000;
+                            setTimeout(() => player.pauseVideo(), remainingTime);
+                        }
+                    }
+                }, (nextLine ? nextLine.time - time : 5) * 1000);
+            }
+        }
+
+        // 在模式切換時也要處理計時器
+        document.getElementById('modeToggle').addEventListener('change', function(e) {
+            isContinuousMode = e.target.checked;
+            
+            if (window.pauseTimer) {
+                clearTimeout(window.pauseTimer);
+            }
+            
+            if (!isContinuousMode && player && player.pauseVideo) {
+                player.pauseVideo();
+            }
+        });
+
+        // 初始化
+        loadYouTubeAPI();
+    </script>
+
+
+
+		</body>
+		</html>
