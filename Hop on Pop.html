@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+		<html>
+		<head>
+
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lyrics Player</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 10px;
+            background: #000;  /* 原本是 #f9f9f9 */
+			color: #fff;      /* 加入這行確保文字顏色 */
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            gap: 20px;
+        }
+        .video-container {
+            flex: 2;
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            background: #000;
+        }
+		/* 手機版樣式 */
+        @media (max-width: 768px) {
+          .video-container {
+                position: sticky;
+                top: 60px;  /* 加大這個值，配合 Google Sites 的標題列高度 */
+                z-index: 100;
+                margin-bottom: 10px;
+                /* 可能需要額外的 margin-top */
+                margin-top: 60px;  /* 加入這行，確保初始位置也正確 */
+            }
+
+            body {
+               /* 確保有足夠的頂部空間 */
+                 padding-top: 60px;
+            }
+			
+            .container {
+                flex-direction: column;
+                padding-top: 0;
+            }
+        }
+		
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .lyrics-container {
+            flex: 1;
+            height: calc(100vh - 40px);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background: #1a1a1a;  /* 原本是 white */
+			color: #fff;         /* 加入這行 */
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .lyrics-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 15px;
+            background: #2d2d2d;  /* 原本是 #f0f0f0 */
+			border-bottom: 1px solid #333;  /* 原本是 #ddd */
+            border-bottom: 1px solid #ddd;
+        }
+        .title {
+            font-weight: bold;
+        }
+        .mode-switch {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        .mode-label {
+            font-size: 0.9em;
+            color: #ccc;  /* 原本是 #666 */
+        }
+        #lyricsDisplay {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+        .lyrics-line {
+            padding: 10px;
+            margin: 5px 0;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+            line-height: 1.4;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+			color: #ccc;  /* 加入這行 */
+        }
+        .lyrics-line:hover {
+            background-color: #333;  /* 原本是 #f0f0f0 */
+        }
+        .lyrics-line.active {
+            background-color: #2196F3;  /* 可以保留藍色或改成 #1a1a1a */
+			color: #fff;  /* 加入這行 */
+            font-weight: bold;
+        }
+        .loop-btn {
+            padding: 5px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            opacity: 0.5;
+            transition: all 0.2s;
+            color: #c79ac5;  /* 原本是 #666 */
+        }
+        .loop-btn:hover {
+            opacity: 1;
+        }
+        .loop-btn.active {
+            color: #ec21f3;
+            opacity: 1;
+        }
+        .lyrics-text {
+            flex: 1;
+        }
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            .lyrics-container {
+                height: 50vh;
+            }
+        }
+        /* 說明按鈕樣式 */
+        .help-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+		.help-button:hover {
+            background: #1976D2;
+            transform: translateY(-2px);
+        }
+        /* 說明面板樣式 */
+        .help-panel {
+            position: fixed;
+            bottom: -100%;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 20px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            transition: bottom 0.3s ease;
+            z-index: 999;
+            max-height: 80vh;
+            overflow-y: auto;
+			color: #000;
+        }
+        .help-panel.show {
+            bottom: 0;
+        }
+        .help-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .help-section {
+            margin-bottom: 20px;
+        }
+        .help-section h3 {
+            color: #2196F3;
+            margin-bottom: 10px;
+        }
+        .help-list {
+            list-style: none;
+            padding: 0;
+        }
+        .help-list li {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .help-icon {
+            color: #666;
+            width: 24px;
+            text-align: center;
+        }
+        .close-help {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+        .backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 998;
+        }
+        .backdrop.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        @media (max-width: 768px) {
+            .help-panel {
+                max-height: 70vh;
+            }
+        }
+    </style>
+
+
+    <div class="container">
+        <div class="video-container">
+            <div id="player"></div>
+        </div>
+        <div class="lyrics-container">
+            <div class="lyrics-header">
+                <div class="title">字幕同步播放器</div>
+                <div class="mode-switch">
+                    <span class="mode-label">自動播放模式</span>
+                    <label class="switch">
+                        <input type="checkbox" id="modeToggle" checked="">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            <div id="lyricsDisplay"></div>
+        </div>
+    </div>
+    <!-- 說明按鈕 -->
+    <button class="help-button" onclick="toggleHelp()">
+        <i class="fas fa-question-circle"></i>
+        使用說明
+    </button>
+    <!-- 背景遮罩 -->
+    <div class="backdrop" onclick="toggleHelp()"></div>
+    <!-- 說明面板 -->
+    <div class="help-panel">
+        <button class="close-help" onclick="toggleHelp()">×</button>
+        <div class="help-content">
+		<div class="help-section">
+                <h3>播放模式</h3>
+                <ul class="help-list">
+                    <li>
+                        <i class="fas fa-play-circle help-icon"></i>
+                        <span>自動播放模式：影片會連續播放，歌詞自動跟隨（預設模式）</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-chalkboard-teacher help-icon"></i>
+                        <span>關閉自動播放模式：進入單句教學模式，點擊歌詞只播放單句，播完自動暫停</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-toggle-on help-icon"></i>
+                        <span>使用右上角的開關切換模式</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="help-section">
+                <h3>歌詞控制</h3>
+                <ul class="help-list">
+                    <li>
+                        <i class="fas fa-mouse-pointer help-icon"></i>
+                        <span>點擊任何歌詞行可跳轉到該位置</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-sync-alt help-icon"></i>
+                        <span>點擊歌詞前的循環按鈕可重複播放該句</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-sync-alt help-icon" style="color: #2196F3;"></i>
+                        <span>藍色圖標表示該句正在循環播放中</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="help-section">
+                <h3>教學模式使用技巧</h3>
+                <ul class="help-list">
+                    <li>
+                        <i class="fas fa-graduation-cap help-icon"></i>
+                        <span>適合逐句講解與練習</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-redo help-icon"></i>
+                        <span>可配合循環按鈕反覆練習困難句子</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-hand-point-up help-icon"></i>
+                        <span>點擊下一句繼續播放</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="help-section">
+                <h3>自動播放模式使用技巧</h3>
+                <ul class="help-list">
+                    <li>
+                        <i class="fas fa-music help-icon"></i>
+                        <span>適合完整聆聽歌曲</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-scroll help-icon"></i>
+                        <span>歌詞會自動捲動並高亮</span>
+                    </li>
+                    <li>
+                        <i class="fas fa-random help-icon"></i>
+                        <span>可隨時點擊歌詞跳轉</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <script>
+        let player;
+        let currentInterval;
+        let loopingIndex = -1;
+        let isLooping = false;
+        let isContinuousMode = true;
+
+        // 歌詞數據
+        let lyrics = [
+        { time: 0.0, text: `(Intro Music & Animation: READING IS)` },
+    { time: 5.9, text: `(alligator growl)` },
+    { time: 9.9, text: `Hop on Pop by Dr. Seuss` },
+    { time: 16.5, text: `(boing sound)` },
+    { time: 18.1, text: `Up Pup. Pup is up.` },
+    { time: 21.9, text: `Wee!` },
+    { time: 23.8, text: `(bird sound)` },
+    { time: 25.0, text: `(thud sounds)` },
+    { time: 28.1, text: `(bark)` },
+    { time: 29.6, text: `Cup Pup. Pup in cup.` },
+    { time: 33.5, text: `(whimper)` },
+    { time: 34.7, text: `Pup Cup. Cup on pup.` },
+    { time: 38.7, text: `(rattle sound)` },
+    { time: 40.9, text: `(scratching/dragging)` },
+    { time: 42.6, text: `Mouse House. Mouse on house.` },
+    { time: 46.9, text: `House Mouse. House on mouse.` },
+    { time: 50.5, text: `Hmm?` },
+    { time: 51.9, text: `(scratching/dragging)` },
+    { time: 54.9, text: `(giggle)` },
+    { time: 56.2, text: `All Tall. We all are tall.` },
+    { time: 60.4, text: `All Small. We all are small.` },
+    { time: 63.8, text: `(laughing)` },
+    { time: 67.4, text: `(ball bouncing sounds)` },
+    { time: 69.5, text: `All Ball. We all play ball.` },
+    { time: 72.4, text: `Ball Wall. Up on a wall.` },
+    { time: 75.5, text: `(ball hitting wall sound)` },
+    { time: 77.4, text: `(tennis ball hit sound)` },
+    { time: 79.4, text: `Day Play. We play all day.` },
+    { time: 82.6, text: `Night Fight. We fight all night.` },
+    { time: 86.4, text: `(grunt)` },
+    { time: 87.5, text: `(tennis sounds)` },
+    { time: 89.7, text: `Oh!` },
+    { time: 90.4, text: `Oof!` },
+    { time: 91.2, text: `All Fall. Fall off the wall.` },
+    { time: 94.4, text: `Oh!` },
+    { time: 95.2, text: `Oof!` },
+    { time: 96.6, text: `Ouch!` },
+    { time: 97.6, text: `Oh!` },
+    { time: 99.5, text: `Huh?` },
+    { time: 102.7, text: `Oh, no!` },
+    { time: 105.8, text: `(growl/roar)` },
+    { time: 107.6, text: `He Me. He is after me.` },
+    { time: 111.2, text: `Him Jim. Jim is after him.` },
+    { time: 114.6, text: `(growling/snarling sounds)` },
+    { time: 120.7, text: `(buzzing)` },
+    { time: 123.4, text: `See Bee. We see a bee.` },
+    { time: 127.4, text: `See Bee Three. Now we see three.` },
+    { time: 131.3, text: `Oh!` },
+    { time: 132.4, text: `Oh! (buzzing intensifies)` },
+    { time: 135.6, text: `(rain/dripping sound)` },
+    { time: 137.5, text: `Three Tree. Three fish in a tree.` },
+    { time: 141.3, text: `Fish in a tree? How can that be?` },
+    { time: 144.7, text: `Hmm?` },
+    { time: 145.6, text: `Ooh!` },
+    { time: 146.2, text: `(rain/dripping sound)` },
+    { time: 149.6, text: `(snoring)` },
+    { time: 151.0, text: `Red Red. They call me Red.` },
+    { time: 154.8, text: `Red Bed. I am in bed.` },
+    { time: 157.6, text: `(snoring)` },
+    { time: 161.7, text: `(snoring sounds)` },
+    { time: 164.4, text: `Red Ned Ted and Ed in bed.` },
+    { time: 168.4, text: `(snoring sounds)` },
+    { time: 176.5, text: `(sighing sound)` },
+    { time: 179.4, text: `Pat Pat. They call him Pat.` },
+    { time: 182.9, text: `Pat Sat. Pat sat on hat.` },
+    { time: 186.4, text: `(thump sound)` },
+    { time: 187.8, text: `(sighing sound)` },
+    { time: 191.5, text: `(cat hiss/growl)` },
+    { time: 193.5, text: `(cat meow)` },
+    { time: 194.6, text: `Pat Cat. Pat sat on cat.` },
+    { time: 198.7, text: `Pat Bat. Pat sat on bat.` },
+    { time: 201.7, text: `(cat meow sounds)` },
+    { time: 208.7, text: `No Pat No. Don't sit on that.` },
+    { time: 212.5, text: `(warning sounds)` },
+    { time: 215.5, text: `Yeah.` },
+    { time: 218.9, text: `Sad Dad Bad Had.` },
+    { time: 223.8, text: `Dad is sad. Very, very sad.` },
+    { time: 228.5, text: `He had a bad day. What a day Dad had!` },
+    { time: 235.8, text: `(sigh)` },
+    { time: 237.4, text: `Thing Thing. What is that thing?` },
+    { time: 241.5, text: `Thing Sing. That thing can sing!` },
+    { time: 244.4, text: `(singing/squawking sounds)` },
+    { time: 251.4, text: `(loud singing/squawking)` },
+    { time: 255.8, text: `Song Long. A long, long song.` },
+    { time: 261.0, text: `Good-by, Thing. You sing too long.` },
+    { time: 266.0, text: `(yawn)` },
+    { time: 269.6, text: `(walking sounds)` },
+    { time: 271.6, text: `Walk Walk. We like to walk.` },
+    { time: 274.8, text: `Walk Talk. We like to talk.` },
+    { time: 277.7, text: `(laughing/talking sounds)` },
+    { time: 284.5, text: `(boing sounds)` },
+    { time: 286.0, text: `Hop Pop. We like to hop. We like to hop on top of Pop.` },
+    { time: 291.7, text: `Oh!` },
+    { time: 292.8, text: `Stop! (horn sound)` },
+    { time: 295.1, text: `You must not hop on Pop.` },
+    { time: 297.6, text: `(horn sound)` },
+    { time: 305.7, text: `Mr. Brown, Mrs. Brown.` },
+    { time: 307.9, text: `Mr. Brown upside down.` },
+    { time: 310.6, text: `(mumbling/grumbling sounds)` },
+    { time: 318.4, text: `(boing sound)` },
+    { time: 320.5, text: `Pup up. Brown down.` },
+    { time: 324.1, text: `Pup is down. Where is Brown?` },
+    { time: 327.6, text: `Oh! (thump)` },
+    { time: 329.5, text: `(boing sound)` },
+    { time: 330.6, text: `(giggle)` },
+    { time: 333.1, text: `(whoosh/boing sound)` },
+    { time: 335.4, text: `Where is Brown? There is Brown!` },
+    { time: 338.1, text: `Mr. Brown is out of town.` },
+    { time: 340.9, text: `Oh! (falling/thud sound)` },
+    { time: 345.6, text: `(whistling)` },
+    { time: 347.4, text: `Back Black. Brown came back.` },
+    { time: 350.7, text: `Brown came back with Mr. Black.` },
+    { time: 353.7, text: `(humming)` },
+    { time: 355.1, text: `(whistling/humming)` },
+    { time: 361.4, text: `(eating/chewing sounds)` },
+    { time: 366.9, text: `Snack Snack. Eat a snack.` },
+    { time: 371.3, text: `Eat a snack with Brown and Black.` },
+    { time: 374.4, text: `Mmm, yum yum.` },
+    { time: 376.4, text: `(eating/chewing sounds)` },
+    { time: 380.9, text: `(boing/thud sounds)` },
+    { time: 382.8, text: `Jump Bump. He jumped. He bumped.` },
+    { time: 386.5, text: `Uff!` },
+    { time: 388.6, text: `Fast Past. He went past fast.` },
+    { time: 393.9, text: `Went Tent Sent.` },
+    { time: 396.3, text: `He went into the tent.` },
+    { time: 400.5, text: `I sent him out of the tent.` },
+    { time: 403.1, text: `Ah! (grunt/growl)` },
+    { time: 405.4, text: `(growling sounds)` },
+    { time: 410.2, text: `(splash sounds)` },
+    { time: 412.5, text: `Wet Get. Two dogs get wet.` },
+    { time: 416.3, text: `Help Yelp. They yelp for help.` },
+    { time: 419.2, text: `Help! Help!` },
+    { time: 421.3, text: `(foghorn/yelping sounds) Help!` },
+    { time: 430.5, text: `(bird sounds)` },
+    { time: 432.5, text: `Hill Will. Will went up hill.` },
+    { time: 436.4, text: `Will Hill Still. Will is up hill still.` },
+    { time: 440.3, text: `(bird sounds)` },
+    { time: 445.5, text: `(whistling)` },
+    { time: 447.4, text: `Father, Mother, Sister, Brother.` },
+    { time: 450.3, text: `(boing/whoosh sound)` },
+    { time: 452.2, text: `That one is my other brother.` },
+    { time: 454.8, text: `(giggling/chattering sounds)` },
+    { time: 461.8, text: `My brothers read a little bit.` },
+    { time: 464.7, text: `Little words like If and It.` },
+    { time: 467.9, text: `(barking)` },
+    { time: 469.4, text: `(whipping/snapping sounds)` },
+    { time: 474.4, text: `(static/TV noise)` },
+    { time: 476.5, text: `My father can read big words, too. Like...` },
+    { time: 481.8, text: `Constantinople and Timbuktu.` },
+    { time: 485.7, text: `Wow!` },
+    { time: 489.4, text: `Say Say. What does this say?` },
+    { time: 492.8, text: `seehemewe patpuppop hethreetreebee tophopstop` },
+    { time: 499.5, text: `Ask me tomorrow but not today.` },
+    { time: 503.1, text: `(whistling sounds)` },
+    { time: 504.9, text: `(Outro Music & "Thank You" in different languages)` },
+    { time: 512.4, text: `Thank you for watching!` }
+        ];
+		// 載入YouTube API
+        function loadYouTubeAPI() {
+            const tag = document.createElement('script');
+            tag.src = 'https://www.youtube.com/iframe_api';
+            const firstScriptTag = document.getElementsByTagName('script')[0];
+            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        }
+
+        // YouTube API 準備完成
+        function onYouTubeIframeAPIReady() {
+            createPlayer('fxm0j1YU4wE');
+            displayLyrics();
+        }
+
+        // 建立播放器
+        function createPlayer(videoId) {
+            player = new YT.Player('player', {
+                height: '360',
+                width: '640',
+                videoId: videoId,
+                playerVars: {
+                    modestbranding: 1,
+                    rel: 0
+                },
+                events: {
+                    'onStateChange': onPlayerStateChange,
+                    'onError': onPlayerError
+                }
+            });
+        }
+
+        // 錯誤處理
+        function onPlayerError(event) {
+            console.error('Video player error:', event.data);
+        }
+
+        // 播放狀態改變
+        function onPlayerStateChange(event) {
+            if (event.data === YT.PlayerState.PLAYING) {
+                if (isContinuousMode) {
+                    startTimeUpdate();
+                }
+            } else if (event.data === YT.PlayerState.ENDED) {
+                if (isLooping && loopingIndex !== -1) {
+                    seekTo(lyrics[loopingIndex].time);
+                }
+            } else {
+                stopTimeUpdate();
+            }
+        }
+
+        // 開始循環播放特定句子
+        function startLooping(index) {
+            if (loopingIndex === index) {
+                stopLooping();
+                return;
+            }
+            stopLooping();
+            loopingIndex = index;
+            isLooping = true;
+            updateLoopButtons();
+            seekTo(lyrics[index].time);
+        }
+
+        // 停止循環播放
+        function stopLooping() {
+            loopingIndex = -1;
+            isLooping = false;
+            updateLoopButtons();
+        }
+
+        // 更新循環按鈕狀態
+        function updateLoopButtons() {
+            const buttons = document.querySelectorAll('.loop-btn');
+            buttons.forEach((btn, index) => {
+                if (index === loopingIndex) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        // 開始更新時間
+        function startTimeUpdate() {
+            clearInterval(currentInterval);
+            currentInterval = setInterval(() => {
+                const currentTime = player.getCurrentTime();
+                if (isLooping && loopingIndex !== -1) {
+                    const currentLine = lyrics[loopingIndex];
+                    const nextLine = lyrics[loopingIndex + 1];
+                    if (nextLine && currentTime >= nextLine.time) {
+                        seekTo(currentLine.time);
+                        return;
+                    }
+                }
+                updateActiveLyrics(currentTime);
+            }, 100);
+        }
+
+        // 停止更新時間
+        function stopTimeUpdate() {
+            if (currentInterval) {
+                clearInterval(currentInterval);
+                currentInterval = null;
+            }
+        }
+
+        // 更新當前歌詞
+        function updateActiveLyrics(currentTime) {
+            const lines = document.querySelectorAll('.lyrics-line');
+            lines.forEach((line, index) => {
+                const time = lyrics[index].time;
+                const nextTime = lyrics[index + 1]?.time || Infinity;
+                
+                if (currentTime >= time && currentTime < nextTime) {
+                    if (!line.classList.contains('active')) {
+                        line.classList.add('active');
+                        line.scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'center'
+                        });
+                    }
+                } else {
+                    line.classList.remove('active');
+                }
+            });
+        }
+
+        // 顯示歌詞
+        function displayLyrics() {
+            const lyricsDisplay = document.getElementById('lyricsDisplay');
+            lyricsDisplay.innerHTML = '';
+            
+            lyrics.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'lyrics-line';
+
+                const loopBtn = document.createElement('button');
+                loopBtn.className = 'loop-btn';
+                loopBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+                loopBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    startLooping(index);
+                };
+                div.appendChild(loopBtn);
+
+                const textSpan = document.createElement('span');
+                textSpan.className = 'lyrics-text';
+                textSpan.textContent = item.text;
+                textSpan.onclick = () => seekTo(item.time, index);
+                div.appendChild(textSpan);
+
+                lyricsDisplay.appendChild(div);
+            });
+        }
+
+        // 切換說明面板顯示狀態
+        function toggleHelp() {
+            const helpPanel = document.querySelector('.help-panel');
+            const backdrop = document.querySelector('.backdrop');
+            helpPanel.classList.toggle('show');
+            backdrop.classList.toggle('show');
+        }
+
+        // 點擊外部關閉說明面板
+        document.addEventListener('click', (e) => {
+            const helpPanel = document.querySelector('.help-panel');
+            const helpButton = document.querySelector('.help-button');
+            if (!helpPanel.contains(e.target) && !helpButton.contains(e.target)) {
+                helpPanel.classList.remove('show');
+                document.querySelector('.backdrop').classList.remove('show');
+            }
+        });
+
+        // 跳轉到指定時間
+        function seekTo(time, index) {
+            player.seekTo(time, true);
+            if (player.getPlayerState() !== YT.PlayerState.PLAYING) {
+                player.playVideo();
+            }
+
+            if (!isContinuousMode && index !== undefined) {
+                const currentLine = lyrics[index];
+                const nextLine = lyrics[index + 1];
+                
+                // 清除之前的計時器
+                if (window.pauseTimer) {
+                    clearTimeout(window.pauseTimer);
+                }
+
+                // 設置新的暫停計時器
+                window.pauseTimer = setTimeout(() => {
+                    if (!isContinuousMode) {
+                        const currentTime = player.getCurrentTime();
+                        const targetTime = nextLine ? nextLine.time : (currentLine.time + 5);
+                        
+                        if (currentTime >= targetTime) {
+                            player.pauseVideo();
+                        } else {
+                            const remainingTime = (targetTime - currentTime) * 1000;
+                            setTimeout(() => player.pauseVideo(), remainingTime);
+                        }
+                    }
+                }, (nextLine ? nextLine.time - time : 5) * 1000);
+            }
+        }
+
+        // 在模式切換時也要處理計時器
+        document.getElementById('modeToggle').addEventListener('change', function(e) {
+            isContinuousMode = e.target.checked;
+            
+            if (window.pauseTimer) {
+                clearTimeout(window.pauseTimer);
+            }
+            
+            if (!isContinuousMode && player && player.pauseVideo) {
+                player.pauseVideo();
+            }
+        });
+
+        // 初始化
+        loadYouTubeAPI();
+    </script>
+
+
+
+		</body>
+		</html>
